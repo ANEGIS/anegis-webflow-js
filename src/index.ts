@@ -1,7 +1,8 @@
-import { greetUser } from '$utils/greet';
+import { EmailValidation } from './validation-email';
+import { VatValidation } from './validation-vatid';
 
 window.Webflow ||= [];
 window.Webflow.push(() => {
-  const name = 'John Doe';
-  greetUser(name);
+  EmailValidation();
+  VatValidation();
 });
