@@ -1,6 +1,6 @@
 const FORM_ELEMENT = '#wf-form-offer-en-form-1234kupciazpupci';
-const FORM_ID_EN = 'c84e2bd0-0a9d-ef11-8a6a-000d3a66c0c2';
-const FORM_ID_PL = 'f4116d6c-079d-ef11-8a6a-6045bddd96d1';
+const FORM_ID_EN = 'eae1cc85-fd95-ef11-8a6a-000d3a66c0c2';
+const FORM_ID_PL = 'bd3ff3e4-1191-ef11-8a6a-000d3a66c0c2';
 const FORM_API_URL =
   'https://public-eur.mkt.dynamics.com/api/v1.0/orgs/1e5b64c1-c132-4237-9477-532bcddae3fd/landingpageforms';
 const FORM_MAPPINGS = [
