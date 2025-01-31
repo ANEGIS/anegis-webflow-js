@@ -5,22 +5,26 @@ export type ValidationResult = {
 };
 
 export type DOMElementsVatValidation = {
-  vatIdInput: HTMLInputElement;
-  vatIdMessage: HTMLElement;
+  vatInput: HTMLInputElement;
+  vatMessage: HTMLElement;
+  vatSelect: HTMLSelectElement;
 };
 
 export type DOMElementsEmailValidation = {
   emailInput: HTMLInputElement;
   emailMessage: HTMLElement;
+  submitButton: HTMLButtonElement;
 };
 
 export type Styles = {
   error: {
     color: string;
     opacity: string;
+    cursor: string;
   };
   normal: {
     color: string;
     opacity: string;
+    cursor: string;
   };
 };
