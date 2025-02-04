@@ -6114,142 +6114,1567 @@
   // src/global/variables.ts
   var BASIC_COLOR = "var(--turquise-a)";
   var ERROR_COLOR = "var(--alert-hover)";
+  var FORM_SUBMIT_BUTTON = "[data-form-submit]";
+  var EMAIL_INPUT_ELEMENT = "[data-email-input]";
+  var EMAIL_FEEDBACK_ELEMENT = "[data-email-feedback]";
+  var VATID_INPUT_ELEMENT = "[data-vat-input]";
+  var VATID_FEEDBACK_ELEMENT = "[data-vat-feedback]";
+  var VATID_COUNTRY_ELEMENT = "[data-vat-country]";
+  var elements = {
+    submitButton: {
+      attribute: FORM_SUBMIT_BUTTON,
+      query: document.querySelector(FORM_SUBMIT_BUTTON)
+    },
+    emailInput: {
+      attribute: EMAIL_INPUT_ELEMENT,
+      query: document.querySelector(EMAIL_INPUT_ELEMENT)
+    },
+    vatInput: {
+      attribute: VATID_INPUT_ELEMENT,
+      query: document.querySelector(VATID_INPUT_ELEMENT)
+    }
+  };
   var styles = {
     error: {
       color: ERROR_COLOR,
-      opacity: "0.5"
+      opacity: "0.5",
+      cursor: "not-allowed"
     },
     normal: {
       color: BASIC_COLOR,
-      opacity: "1"
+      opacity: "1",
+      cursor: "pointer"
     }
   };
 
   // src/validations/validation-email.ts
-  var EMAIL_INPUT_ELEMENT = "[data-email-input]";
-  var EMAIL_FEEDBACK_ELEMENT = "[data-email-feedback]";
+  var messages = {
+    businessEmail: {
+      pl: "U\u017Cyj biznesowego adresu email!",
+      en: "Please use business email!"
+    },
+    invalidFormat: {
+      pl: "Nieprawid\u0142owy format adresu e-mail!",
+      en: "Invalid e-mail format!"
+    }
+  };
   function EmailValidation() {
     const htmlLang = document.documentElement.lang?.toLowerCase() || "";
     const browserLang = navigator.language?.toLowerCase() || "";
-    const isPolishSite = htmlLang.startsWith("pl") || browserLang.startsWith("pl") || browserLang.includes("pl");
-    const elements = {
+    const isPolishSite2 = htmlLang.startsWith("pl") || browserLang.startsWith("pl") || browserLang.includes("pl");
+    const elements2 = {
       emailInput: document.querySelector(EMAIL_INPUT_ELEMENT),
-      emailMessage: document.querySelector(EMAIL_FEEDBACK_ELEMENT)
+      emailMessage: document.querySelector(EMAIL_FEEDBACK_ELEMENT),
+      submitButton: document.querySelector("[data-form-submit]")
     };
-    if (!elements.emailInput || !elements.emailMessage) {
+    if (!elements2.emailInput || !elements2.emailMessage) {
       return;
     }
-    const styles2 = {
-      error: {
-        color: ERROR_COLOR,
-        opacity: "0.5"
-      },
-      normal: {
-        color: BASIC_COLOR,
-        opacity: "1"
+    function updateSubmitButtonState(isValid) {
+      if (elements2.submitButton) {
+        const form2 = elements2.emailInput.closest("form");
+        if (form2) {
+          const requiredFields = Array.from(form2.querySelectorAll("[required]"));
+          const allRequiredFieldsFilled = requiredFields.every((field) => {
+            if (field.type === "checkbox" || field.type === "radio") {
+              return field.checked;
+            }
+            return field.value.trim() !== "";
+          });
+          elements2.submitButton.disabled = !isValid || !allRequiredFieldsFilled;
+        } else {
+          elements2.submitButton.disabled = !isValid;
+        }
+        if (elements2.submitButton.disabled) {
+          elements2.submitButton.style.cursor = styles.error.cursor;
+          elements2.submitButton.style.opacity = styles.error.opacity;
+        } else {
+          elements2.submitButton.style.cursor = styles.normal.cursor;
+          elements2.submitButton.style.opacity = styles.normal.opacity;
+        }
       }
-    };
+    }
     function showValidationError(message) {
-      elements.emailMessage.style.display = "block";
-      elements.emailMessage.innerText = message;
-      elements.emailMessage.style.color = styles2.error.color;
-      elements.emailInput.style.borderBottomColor = styles2.error.color;
+      elements2.emailMessage.style.display = "block";
+      elements2.emailMessage.innerText = message;
+      elements2.emailMessage.style.color = styles.error.color;
+      elements2.emailInput.style.borderBottomColor = styles.error.color;
+      updateSubmitButtonState(false);
     }
     function resetValidationState() {
-      elements.emailMessage.style.display = "none";
-      elements.emailMessage.innerText = "";
-      elements.emailInput.style.borderBottomColor = styles2.normal.color;
+      elements2.emailMessage.style.display = "none";
+      elements2.emailMessage.innerText = "";
+      elements2.emailInput.style.borderBottomColor = styles.normal.color;
+      updateSubmitButtonState(true);
     }
-    function checkEmailFormat(email) {
+    function validateEmail(email) {
+      if (!email) {
+        return false;
+      }
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!email.match(emailRegex)) {
-        if (isPolishSite) {
-          showValidationError("Nieprawid\u0142owy format adresu e-mail!");
+        if (isPolishSite2) {
+          showValidationError(messages.invalidFormat.pl);
         } else {
-          showValidationError("Invalid e-mail format!");
+          showValidationError(messages.invalidFormat.en);
+        }
+        return false;
+      }
+      if (EMAIL_LIST.includes(email.split("@")[1])) {
+        if (isPolishSite2) {
+          showValidationError(messages.businessEmail.pl);
+        } else {
+          showValidationError(messages.businessEmail.en);
         }
         return false;
       }
       return true;
     }
-    function checkEmailDomain(value) {
-      if (EMAIL_LIST.includes(value.split("@")[1])) {
-        if (isPolishSite) {
-          showValidationError("U\u017Cyj biznesowego adresu email!");
-        } else {
-          showValidationError("Please use business email!");
-        }
-        return;
-      }
-    }
     function handleEmailValidation() {
-      const email = elements.emailInput.value.trim();
-      resetValidationState();
-      if (!email) return;
-      if (!checkEmailFormat(email)) return;
-      checkEmailDomain(email);
+      const email = elements2.emailInput.value.trim();
+      const isValid = validateEmail(email);
+      if (isValid) {
+        resetValidationState();
+      }
+      updateSubmitButtonState(isValid);
     }
-    elements.emailInput.addEventListener("input", handleEmailValidation);
+    const form = elements2.emailInput.closest("form");
+    if (form) {
+      const inputSelector = "input, select, textarea";
+      form.querySelectorAll(inputSelector).forEach((input) => {
+        input.addEventListener("input", handleEmailValidation);
+        input.addEventListener("change", handleEmailValidation);
+      });
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node instanceof HTMLElement && node.matches(inputSelector)) {
+              node.addEventListener("input", handleEmailValidation);
+              node.addEventListener("change", handleEmailValidation);
+            }
+          });
+        });
+      });
+      observer.observe(form, {
+        childList: true,
+        subtree: true
+      });
+    }
+    elements2.emailInput.addEventListener("input", handleEmailValidation);
+    handleEmailValidation();
   }
 
-  // src/validations/validation-vatid.ts
-  var VATID_PL_WEIGHTS = [6, 5, 7, 2, 3, 4, 5, 6, 7];
-  var VATID_VALID_LENGTH = 10;
-  var VATID_MSG_CHARS_EXCEED = "Numer NIP jest za d\u0142ugi";
-  var VATID_MSG_CHARS_RECEDE = "Numer NIP jest za kr\xF3tki";
-  var VATID_MSG_CHARS_INVALID = "Numer NIP jest nieprawid\u0142owy!";
-  var VATID_INPUT_ELEMENT = "[data-vat-input]";
-  var VATID_FEEDBACK_ELEMENT = "[data-vat-feedback]";
-  function VatValidation() {
-    const htmlLang = document.documentElement.lang?.toLowerCase() || "";
-    const browserLang = navigator.language?.toLowerCase() || "";
-    const isPolishSite = htmlLang.startsWith("pl") || browserLang.startsWith("pl") || browserLang.includes("pl");
-    if (!isPolishSite) {
-      console.log("VAT validation is NOT running");
-      return;
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/andorra.js
+  var andorra = {
+    name: "Andorra",
+    codes: ["AD", "AND", "020"],
+    calcFn: (vat) => {
+      return vat.length === 8;
+    },
+    rules: {
+      multipliers: {},
+      regex: [/^(AD)([fealecdgopuFEALECDGOPU]{1}\d{6}[fealecdgopuFEALECDGOPU]{1})$/]
     }
-    const elements = {
-      vatIdInput: document.querySelector(VATID_INPUT_ELEMENT),
-      vatIdMessage: document.querySelector(VATID_FEEDBACK_ELEMENT)
-    };
-    if (!elements.vatIdInput || !elements.vatIdMessage) {
-      return;
-    }
-    function validatePolishVatId(vatId) {
-      const cleanVatId = vatId.replace(/[\s-]/g, "");
-      if (!/^\d{10}$/.test(cleanVatId)) {
-        return {
-          isValid: false,
-          error: `VAT ID must contain exactly ${VATID_VALID_LENGTH} digits`
-        };
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/austria.js
+  var austria = {
+    name: "Austria",
+    codes: ["AT", "AUT", "040"],
+    calcFn: (vat) => {
+      let total = 0;
+      for (let i = 0; i < 7; i++) {
+        const temp = Number(vat.charAt(i)) * austria.rules.multipliers.common[i];
+        if (temp > 9) {
+          total += Math.floor(temp / 10) + temp % 10;
+        } else {
+          total += temp;
+        }
       }
-      const digits = cleanVatId.split("").map(Number);
-      const sum = VATID_PL_WEIGHTS.reduce((acc, weight, index) => acc + weight * digits[index], 0);
-      const checkDigit = digits[9];
-      const expectedCheckDigit = sum % 11;
-      return expectedCheckDigit === checkDigit ? { isValid: true, normalizedVatId: cleanVatId } : { isValid: false, error: "Invalid checksum" };
+      total = 10 - (total + 4) % 10;
+      if (total === 10)
+        total = 0;
+      return total === Number(vat.slice(7, 8));
+    },
+    rules: {
+      multipliers: {
+        common: [1, 2, 1, 2, 1, 2, 1]
+      },
+      regex: [/^(AT)U(\d{8})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/belgium.js
+  var belgium = {
+    name: "Belgium",
+    codes: ["BE", "BEL", "056"],
+    calcFn: (vat) => {
+      const newVat = vat.length === 9 ? "0" + vat : vat;
+      if (Number(newVat.slice(1, 2)) === 0)
+        return false;
+      const check = 97 - Number(newVat.slice(0, 8)) % 97;
+      return check === Number(newVat.slice(8, 10));
+    },
+    rules: {
+      multipliers: {},
+      regex: [/^(BE)(0?\d{9})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/brazil.js
+  var generateCheckSums = (numbers, validators) => {
+    const initialCheckSums = [0, 0];
+    return validators.reduce(([checkerA, checkerB], validator, index) => [index === 0 ? 0 : checkerA + numbers[index - 1] * validator, checkerB + numbers[index] * validator], initialCheckSums);
+  };
+  var isRepeatedArray = (varNumbers) => varNumbers.every((varNumber) => varNumbers[0] === varNumber);
+  var getRemaining = (value) => value % 11 < 2 ? 0 : 11 - value % 11;
+  var brazil = {
+    name: "Brazil",
+    codes: ["BR", "BRA", "076"],
+    calcFn: (vat) => {
+      const numbers = vat.split("").map(Number);
+      if (isRepeatedArray(numbers)) {
+        return false;
+      }
+      const validators = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+      const checkers = generateCheckSums(numbers, validators);
+      return numbers[12] === getRemaining(checkers[0]) && numbers[13] === getRemaining(checkers[1]);
+    },
+    rules: {
+      multipliers: {},
+      regex: [/^(BR)?(\d{14}|\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/bulgaria.js
+  var bulgaria = {
+    name: "Bulgaria",
+    codes: ["BG", "BGR", "100"],
+    calcFn: (vat) => {
+      if (vat.length === 9)
+        return _checkNineLengthVat(vat);
+      const { multipliers } = bulgaria.rules;
+      return _isPhysicalPerson(vat, multipliers.physical) || _isForeigner(vat, multipliers) || _miscellaneousVAT(vat, multipliers);
+    },
+    rules: {
+      multipliers: {
+        physical: [2, 4, 8, 5, 10, 9, 7, 3, 6],
+        foreigner: [21, 19, 17, 13, 11, 9, 7, 3, 1],
+        miscellaneous: [4, 3, 2, 7, 6, 5, 4, 3, 2]
+      },
+      regex: [/^(BG)(\d{9,10})$/]
+    }
+  };
+  function _increase(value, vat, from, to, incr) {
+    let result = value;
+    for (let i = from; i < to; i++) {
+      result += Number(vat.charAt(i)) * (i + incr);
+    }
+    return result;
+  }
+  function _increase2(value, vat, from, to, multipliers) {
+    let result = value;
+    for (let i = from; i < to; i++) {
+      result += Number(vat.charAt(i)) * multipliers[i];
+    }
+    return result;
+  }
+  function _checkNineLengthVat(vat) {
+    let total;
+    let temp = _increase(0, vat, 0, 8, 1);
+    const expect = Number(vat.slice(8));
+    total = temp % 11;
+    if (total !== 10)
+      return total === expect;
+    temp = _increase(0, vat, 0, 8, 3);
+    total = temp % 11;
+    if (total === 10)
+      total = 0;
+    return total === expect;
+  }
+  function _isPhysicalPerson(vat, physicalMultipliers) {
+    if (/^\d\d[0-5]\d[0-3]\d\d{4}$/.test(vat)) {
+      const month = Number(vat.slice(2, 4));
+      if (month > 0 && month < 13 || month > 20 && month < 33 || month > 40 && month < 53) {
+        let total = _increase2(0, vat, 0, 9, physicalMultipliers);
+        total = total % 11;
+        if (total === 10)
+          total = 0;
+        if (total === Number(vat.substr(9, 1)))
+          return true;
+      }
+    }
+    return false;
+  }
+  function _isForeigner(vat, multipliers) {
+    const total = _increase2(0, vat, 0, 9, multipliers.foreigner);
+    return total % 10 === Number(vat.substr(9, 1));
+  }
+  function _miscellaneousVAT(vat, multipliers) {
+    let total = _increase2(0, vat, 0, 9, multipliers.miscellaneous);
+    total = 11 - total % 11;
+    if (total === 10)
+      return false;
+    if (total === 11)
+      total = 0;
+    const expect = Number(vat.substr(9, 1));
+    return total === expect;
+  }
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/croatiat.js
+  var croatia = {
+    name: "Croatia",
+    codes: ["HR", "HRV", "191"],
+    calcFn: (vat) => {
+      let product = 10;
+      let sum = 0;
+      for (let i = 0; i < 10; i++) {
+        sum = (Number(vat.charAt(i)) + product) % 10;
+        if (sum === 0) {
+          sum = 10;
+        }
+        product = 2 * sum % 11;
+      }
+      const expect = Number(vat.slice(10, 11));
+      return (product + expect) % 10 === 1;
+    },
+    rules: {
+      multipliers: {},
+      regex: [/^(HR)(\d{11})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/cyprus.js
+  var cyprus = {
+    name: "Cyprus",
+    codes: ["CY", "CYP", "196"],
+    calcFn: (vat) => {
+      if (Number(vat.slice(0, 2)) === 12)
+        return false;
+      let total = extractAndMultiplyByCounter(vat, 0);
+      total = total % 26;
+      total = String.fromCharCode(total + 65);
+      const expect = vat.substr(8, 1);
+      return total === expect;
+    },
+    rules: {
+      multipliers: {},
+      regex: [/^(CY)([0-59]\d{7}[A-Z])$/]
+    }
+  };
+  function extractAndMultiplyByCounter(vat, total) {
+    let result = total;
+    for (let i = 0; i < 8; i++) {
+      let temp = Number(vat.charAt(i));
+      if (i % 2 === 0) {
+        switch (temp) {
+          case 0:
+            temp = 1;
+            break;
+          case 1:
+            temp = 0;
+            break;
+          case 2:
+            temp = 5;
+            break;
+          case 3:
+            temp = 7;
+            break;
+          case 4:
+            temp = 9;
+            break;
+          default:
+            temp = temp * 2 + 3;
+        }
+      }
+      result += temp;
+    }
+    return result;
+  }
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/czechRepublic.js
+  var czechRepublic = {
+    name: "Czech Republic",
+    codes: ["CZ", "CZE", "203"],
+    calcFn: (vat) => {
+      const { rules } = czechRepublic;
+      const { multipliers, additional, lookup } = rules;
+      if (!additional)
+        return false;
+      return isLegalEntities(vat, multipliers.common, additional) || isIndividualType2(vat, multipliers.common, additional, lookup) || isIndividualType3(vat, additional) || isIndividualType1(vat, additional);
+    },
+    rules: {
+      multipliers: {
+        common: [8, 7, 6, 5, 4, 3, 2]
+      },
+      lookup: [8, 7, 6, 5, 4, 3, 2, 1, 0, 9, 8],
+      regex: [/^(CZ)(\d{8,10})(\d{3})?$/],
+      additional: [/^\d{8}$/, /^[0-5][0-9][0|1|5|6]\d[0-3]\d\d{3}$/, /^6\d{8}$/, /^\d{2}[0-3|5-8]\d[0-3]\d\d{4}$/]
+    }
+  };
+  function isLegalEntities(vat, multipliers, additional) {
+    let total = 0;
+    if (additional[0].test(vat)) {
+      for (let i = 0; i < 7; i++) {
+        total += Number(vat.charAt(i)) * multipliers[i];
+      }
+      total = 11 - total % 11;
+      if (total === 10)
+        total = 0;
+      if (total === 11)
+        total = 1;
+      const expect = Number(vat.slice(7, 8));
+      return total === expect;
+    }
+    return false;
+  }
+  function isIndividualType1(vat, additional) {
+    if (additional[1].test(vat)) {
+      return Number(vat.slice(0, 2)) <= 62;
+    }
+    return false;
+  }
+  function isIndividualType2(vat, multipliers, additional, lookup) {
+    let total = 0;
+    if (additional[2].test(vat)) {
+      for (let j = 0; j < 7; j++) {
+        total += Number(vat.charAt(j + 1)) * multipliers[j];
+      }
+      let a;
+      if (total % 11 === 0) {
+        a = total + 11;
+      } else {
+        a = Math.ceil(total / 11) * 11;
+      }
+      const pointer = a - total - 1;
+      const expect = Number(vat.slice(8, 9));
+      if (!lookup)
+        return false;
+      return lookup[pointer] === expect;
+    }
+    return false;
+  }
+  function isIndividualType3(vat, additional) {
+    if (additional[3].test(vat)) {
+      const temp = Number(vat.slice(0, 2)) + Number(vat.slice(2, 4)) + Number(vat.slice(4, 6)) + Number(vat.slice(6, 8)) + Number(vat.slice(8));
+      const expect = Number(vat) % 11 === 0;
+      return !!(temp % 11 === 0 && expect);
+    }
+    return false;
+  }
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/denmark.js
+  var denmark = {
+    name: "Denmark",
+    codes: ["DK", "DNK", "208"],
+    calcFn: (vat) => {
+      let total = 0;
+      for (let i = 0; i < 8; i++) {
+        total += Number(vat.charAt(i)) * denmark.rules.multipliers.common[i];
+      }
+      return total % 11 === 0;
+    },
+    rules: {
+      multipliers: {
+        common: [2, 7, 6, 5, 4, 3, 2, 1]
+      },
+      regex: [/^(DK)(\d{8})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/estonia.js
+  var estonia = {
+    name: "Estonia",
+    codes: ["EE", "EST", "233"],
+    calcFn: (vat) => {
+      let total = 0;
+      let expect;
+      for (let i = 0; i < 8; i++) {
+        total += Number(vat.charAt(i)) * estonia.rules.multipliers.common[i];
+      }
+      total = 10 - total % 10;
+      if (total === 10)
+        total = 0;
+      expect = Number(vat.slice(8, 9));
+      return total === expect;
+    },
+    rules: {
+      multipliers: {
+        common: [3, 7, 1, 3, 7, 1, 3, 7]
+      },
+      regex: [/^(EE)(10\d{7})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/europe.js
+  var europe = {
+    name: "Europe",
+    codes: ["EU", "EUR", "000"],
+    calcFn: () => {
+      return true;
+    },
+    rules: {
+      multipliers: {},
+      regex: [/^(EU)(\d{9})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/finland.js
+  var finland = {
+    name: "Finland",
+    codes: ["FI", "FIN", "246"],
+    calcFn: (vat) => {
+      let total = 0;
+      for (let i = 0; i < 7; i++)
+        total += Number(vat.charAt(i)) * finland.rules.multipliers.common[i];
+      total = 11 - total % 11;
+      if (total > 9) {
+        total = 0;
+      }
+      const expect = Number(vat.slice(7, 8));
+      return total === expect;
+    },
+    rules: {
+      multipliers: {
+        common: [7, 9, 10, 5, 8, 4, 2]
+      },
+      regex: [/^(FI)(\d{8})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/france.js
+  var france = {
+    name: "France",
+    codes: ["FR", "FRA", "250"],
+    calcFn: (vat) => {
+      let total;
+      if (!/^\d{11}$/.test(vat))
+        return true;
+      total = Number(vat.substring(2));
+      total = (total * 100 + 12) % 97;
+      const expect = Number(vat.slice(0, 2));
+      return total === expect;
+    },
+    rules: {
+      multipliers: {},
+      regex: [/^(FR)(\d{11})$/, /^(FR)([A-HJ-NP-Z]\d{10})$/, /^(FR)(\d[A-HJ-NP-Z]\d{9})$/, /^(FR)([A-HJ-NP-Z]{2}\d{9})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/germany.js
+  var germany = {
+    name: "Germany",
+    codes: ["DE", "DEU", "276"],
+    calcFn: (vat) => {
+      let product = 10;
+      let sum = 0;
+      let checkDigit2 = 0;
+      let expect;
+      for (let i = 0; i < 8; i++) {
+        sum = (Number(vat.charAt(i)) + product) % 10;
+        if (sum === 0) {
+          sum = 10;
+        }
+        product = 2 * sum % 11;
+      }
+      if (11 - product === 10) {
+        checkDigit2 = 0;
+      } else {
+        checkDigit2 = 11 - product;
+      }
+      expect = Number(vat.slice(8, 9));
+      return checkDigit2 === expect;
+    },
+    rules: {
+      multipliers: {},
+      regex: [/^(DE)([1-9]\d{8})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/greece.js
+  var greece = {
+    name: "Greece",
+    codes: ["GR", "GRC", "300"],
+    calcFn: (vat) => {
+      let total = 0;
+      const newVat = vat.length === 8 ? "0" + vat : vat;
+      for (let i = 0; i < 8; i++) {
+        total += Number(newVat.charAt(i)) * greece.rules.multipliers.common[i];
+      }
+      total = total % 11;
+      total = total > 9 ? 0 : total;
+      const expect = Number(newVat.slice(8, 9));
+      return total === expect;
+    },
+    rules: {
+      multipliers: {
+        common: [256, 128, 64, 32, 16, 8, 4, 2]
+      },
+      regex: [/^(EL)(\d{9})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/hungary.js
+  var hungary = {
+    name: "Hungary",
+    codes: ["HU", "HUN", "348"],
+    calcFn: (vat) => {
+      let total = 0;
+      for (let i = 0; i < 7; i++) {
+        total += Number(vat.charAt(i)) * hungary.rules.multipliers.common[i];
+      }
+      total = 10 - total % 10;
+      if (total === 10)
+        total = 0;
+      const expect = Number(vat.slice(7, 8));
+      return total === expect;
+    },
+    rules: {
+      multipliers: {
+        common: [9, 7, 3, 1, 9, 7, 3]
+      },
+      regex: [/^(HU)(\d{8})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/ireland.js
+  var ireland = {
+    name: "Ireland",
+    codes: ["IE", "IRL", "372"],
+    calcFn: (vat) => {
+      const { typeFormats, multipliers } = ireland.rules;
+      if (!typeFormats || !typeFormats.first)
+        return false;
+      let total = 0;
+      let newVat = vat;
+      if (typeFormats.first.test(vat)) {
+        newVat = "0" + vat.substring(2, 7) + vat.substring(0, 1) + vat.substring(7, 8);
+      }
+      for (let i = 0; i < 7; i++) {
+        total += Number(newVat.charAt(i)) * multipliers.common[i];
+      }
+      if (typeFormats.third.test(newVat)) {
+        total += newVat.charAt(8) === "H" ? 72 : 9;
+      }
+      total = total % 23;
+      total = total === 0 ? "W" : String.fromCharCode(total + 64);
+      const expect = newVat.slice(7, 8);
+      return total === expect;
+    },
+    rules: {
+      multipliers: {
+        common: [8, 7, 6, 5, 4, 3, 2]
+      },
+      typeFormats: {
+        first: /^\d[A-Z*+]/,
+        third: /^\d{7}[A-Z][AH]$/
+      },
+      regex: [/^(IE)(\d{7}[A-W])$/, /^(IE)([7-9][A-Z*+)]\d{5}[A-W])$/, /^(IE)(\d{7}[A-W][AH])$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/italy.js
+  var italy = {
+    name: "Italy",
+    codes: ["IT", "ITA", "380"],
+    calcFn: (vat) => {
+      let total = 0;
+      let temp;
+      if (Number(vat.slice(0, 7)) === 0) {
+        return false;
+      }
+      temp = Number(vat.slice(7, 10));
+      if (temp < 1 || temp > 201 && temp !== 999 && temp !== 888) {
+        return false;
+      }
+      for (let i = 0; i < 10; i++) {
+        temp = Number(vat.charAt(i)) * italy.rules.multipliers.common[i];
+        if (temp > 9)
+          total += Math.floor(temp / 10) + temp % 10;
+        else
+          total += temp;
+      }
+      total = 10 - total % 10;
+      if (total > 9) {
+        total = 0;
+      }
+      const expect = Number(vat.slice(10, 11));
+      return total === expect;
+    },
+    rules: {
+      multipliers: {
+        common: [1, 2, 1, 2, 1, 2, 1, 2, 1, 2]
+      },
+      regex: [/^(IT)(\d{11})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/latvia.js
+  var latvia = {
+    name: "Latvia",
+    codes: ["LV", "LVA", "428"],
+    calcFn: (vat) => {
+      let total = 0;
+      if (/^[0-3]/.test(vat)) {
+        return Boolean(/^[0-3][0-9][0-1][0-9]/.test(vat));
+      } else {
+        for (let i = 0; i < 10; i++) {
+          total += Number(vat.charAt(i)) * latvia.rules.multipliers.common[i];
+        }
+        if (total % 11 === 4 && Number(vat[0]) === 9)
+          total = total - 45;
+        if (total % 11 === 4) {
+          total = 4 - total % 11;
+        } else if (total % 11 > 4) {
+          total = 14 - total % 11;
+        } else if (total % 11 < 4) {
+          total = 3 - total % 11;
+        }
+        const expect = Number(vat.slice(10, 11));
+        return total === expect;
+      }
+    },
+    rules: {
+      multipliers: {
+        common: [9, 1, 4, 8, 3, 10, 2, 5, 7, 6]
+      },
+      regex: [/^(LV)(\d{11})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/lithuania.js
+  var lithuania = {
+    name: "Lithuania",
+    codes: ["LT", "LTU", "440"],
+    calcFn: (vat) => {
+      return _check9DigitVat(vat, lithuania.rules) || _check12DigitVat(vat, lithuania.rules);
+    },
+    rules: {
+      multipliers: {
+        short: [3, 4, 5, 6, 7, 8, 9, 1],
+        med: [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2],
+        alt: [3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4]
+      },
+      check: /^\d{10}1/,
+      regex: [/^(LT)(\d{9}|\d{12})$/]
+    }
+  };
+  function _extractDigit(vat, multiplierList, key) {
+    return Number(vat.charAt(key)) * multiplierList[key];
+  }
+  function _doubleCheckCalculation(vat, total, rules) {
+    let result = total;
+    if (result % 11 === 10) {
+      result = 0;
+      for (let i = 0; i < 8; i++) {
+        result += _extractDigit(vat, rules.multipliers.short, i);
+      }
+    }
+    return result;
+  }
+  function extractDigit(vat, total) {
+    let result = total;
+    for (let i = 0; i < 8; i++) {
+      result += Number(vat.charAt(i)) * (i + 1);
+    }
+    return result;
+  }
+  function checkDigit(total) {
+    let result = total % 11;
+    if (result === 10) {
+      result = 0;
+    }
+    return result;
+  }
+  function _check9DigitVat(vat, rules) {
+    let total = 0;
+    if (vat.length === 9) {
+      if (!/^\d{7}1/.test(vat))
+        return false;
+      total = extractDigit(vat, total);
+      total = _doubleCheckCalculation(vat, total, rules);
+      total = checkDigit(total);
+      const expect = Number(vat.slice(8, 9));
+      return total === expect;
+    }
+    return false;
+  }
+  function extractDigit12(vat, total, rules) {
+    let result = total;
+    for (let k = 0; k < 11; k++) {
+      result += _extractDigit(vat, rules.multipliers.med, k);
+    }
+    return result;
+  }
+  function _doubleCheckCalculation12(vat, total, rules) {
+    let result = total;
+    if (total % 11 === 10) {
+      result = 0;
+      for (let l = 0; l < 11; l++) {
+        result += _extractDigit(vat, rules.multipliers.alt, l);
+      }
+    }
+    return result;
+  }
+  function _check12DigitVat(vat, rules) {
+    let total = 0;
+    if (vat.length === 12) {
+      if (!rules.check)
+        return false;
+      if (!rules.check.test(vat))
+        return false;
+      total = extractDigit12(vat, total, rules);
+      total = _doubleCheckCalculation12(vat, total, rules);
+      total = checkDigit(total);
+      const expect = Number(vat.slice(11, 12));
+      return total === expect;
+    }
+    return false;
+  }
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/luxembourg.js
+  var luxembourg = {
+    name: "Luxembourg",
+    codes: ["LU", "LUX", "442"],
+    calcFn: (vat) => {
+      const expect = Number(vat.slice(6, 8));
+      const checkDigit2 = Number(vat.slice(0, 6)) % 89;
+      return checkDigit2 === expect;
+    },
+    rules: {
+      multipliers: {},
+      regex: [/^(LU)(\d{8})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/malta.js
+  var malta = {
+    name: "Malta",
+    codes: ["MT", "MLT", "470"],
+    calcFn: (vat) => {
+      let total = 0;
+      for (let i = 0; i < 6; i++) {
+        total += Number(vat.charAt(i)) * malta.rules.multipliers.common[i];
+      }
+      total = 37 - total % 37;
+      const expect = Number(vat.slice(6, 8));
+      return total === expect;
+    },
+    rules: {
+      multipliers: {
+        common: [3, 4, 6, 7, 8, 9]
+      },
+      regex: [/^(MT)([1-9]\d{7})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/netherlands.js
+  var netherlands = {
+    name: "Netherlands",
+    codes: ["NL", "NLD", "528"],
+    calcFn: (input) => {
+      const vat = input.replace(/[\ \-\_]/g, "").toUpperCase();
+      const { additional, multipliers } = netherlands.rules;
+      if (!additional)
+        return false;
+      const match = vat.match(additional[0]);
+      if (!match || !match[1])
+        return false;
+      const numb = match[1];
+      const characterValues = `NL${vat}`.split("").map(getCharValue);
+      let total = 0;
+      for (let i = 0; i < 8; i++) {
+        total += Number(numb.charAt(i)) * multipliers.common[i];
+      }
+      total = total % 11;
+      if (total > 9) {
+        total = 0;
+      }
+      const expect = Number(numb.slice(8, 9));
+      return total === expect || isNinetySevenMod(characterValues.join(""));
+    },
+    rules: {
+      multipliers: {
+        common: [9, 8, 7, 6, 5, 4, 3, 2]
+      },
+      regex: [/^(NL)(\d{9}B\d{2})$/],
+      additional: [/^(\d{9})B\d{2}$/]
+    }
+  };
+  function getCharValue(char) {
+    if (char === "+")
+      return 36;
+    if (char === "*")
+      return 37;
+    const code = char.charCodeAt(0) - 55;
+    if (code > 9 && code < 91)
+      return code;
+    return parseInt(char, 10);
+  }
+  function isNinetySevenMod(value) {
+    const remainder = mod(value, 97);
+    return remainder === 1;
+  }
+  function mod(value, divisor) {
+    let res = 0;
+    for (const char of value.split("")) {
+      res = (res * 10 + +char) % divisor;
+    }
+    return res;
+  }
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/norway.js
+  var norway = {
+    name: "Norway",
+    codes: ["NO", "NOR", "578"],
+    calcFn: (vat) => {
+      let total = 0;
+      for (let i = 0; i < 8; i++) {
+        total += Number(vat.charAt(i)) * norway.rules.multipliers.common[i];
+      }
+      total = 11 - total % 11;
+      if (total === 11) {
+        total = 0;
+      }
+      if (total < 10) {
+        const expect = Number(vat.slice(8, 9));
+        return total === expect;
+      }
+      return false;
+    },
+    rules: {
+      multipliers: {
+        common: [3, 2, 7, 6, 5, 4, 3, 2]
+      },
+      regex: [/^(NO)(\d{9})(MVA)?$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/poland.js
+  var poland = {
+    name: "Poland",
+    codes: ["PL", "POL", "616"],
+    calcFn: (vat) => {
+      let total = 0;
+      for (let i = 0; i < 9; i++) {
+        total += Number(vat.charAt(i)) * poland.rules.multipliers.common[i];
+      }
+      total = total % 11;
+      if (total > 9) {
+        total = 0;
+      }
+      const expect = Number(vat.slice(9, 10));
+      return total === expect;
+    },
+    rules: {
+      multipliers: {
+        common: [6, 5, 7, 2, 3, 4, 5, 6, 7]
+      },
+      regex: [/^(PL)(\d{10})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/portugal.js
+  var portugal = {
+    name: "Portugal",
+    codes: ["PT", "PRT", "620"],
+    calcFn: (vat) => {
+      let total = 0;
+      for (let i = 0; i < 8; i++) {
+        total += Number(vat.charAt(i)) * portugal.rules.multipliers.common[i];
+      }
+      total = 11 - total % 11;
+      if (total > 9) {
+        total = 0;
+      }
+      const expect = Number(vat.slice(8, 9));
+      return total === expect;
+    },
+    rules: {
+      multipliers: {
+        common: [9, 8, 7, 6, 5, 4, 3, 2]
+      },
+      regex: [/^(PT)(\d{9})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/romania.js
+  var romania = {
+    name: "Romania",
+    codes: ["RO", "ROU", "642"],
+    calcFn: (vat) => {
+      let total = 0;
+      const vatLength = vat.length;
+      const multipliers = romania.rules.multipliers.common.slice(10 - vatLength);
+      for (let i = 0; i < vat.length - 1; i++) {
+        total += Number(vat.charAt(i)) * multipliers[i];
+      }
+      total = 10 * total % 11;
+      if (total === 10)
+        total = 0;
+      const expect = Number(vat.slice(vat.length - 1, vat.length));
+      return total === expect;
+    },
+    rules: {
+      multipliers: {
+        common: [7, 5, 3, 2, 1, 7, 5, 3, 2]
+      },
+      regex: [/^(RO)([1-9]\d{1,9})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/russia.js
+  var russia = {
+    name: "Russian Federation",
+    codes: ["RU", "RUS", "643"],
+    calcFn: (vat) => {
+      return _check10DigitINN(vat, russia.rules) || _check12DigitINN(vat, russia.rules);
+    },
+    rules: {
+      multipliers: {
+        m_1: [2, 4, 10, 3, 5, 9, 4, 6, 8, 0],
+        m_2: [7, 2, 4, 10, 3, 5, 9, 4, 6, 8, 0],
+        m_3: [3, 7, 2, 4, 10, 3, 5, 9, 4, 6, 8, 0]
+      },
+      regex: [/^(RU)(\d{10}|\d{12})$/]
+    }
+  };
+  function _check10DigitINN(vat, rules) {
+    let total = 0;
+    if (vat.length === 10) {
+      for (let i = 0; i < 10; i++) {
+        total += Number(vat.charAt(i)) * rules.multipliers.m_1[i];
+      }
+      total = total % 11;
+      if (total > 9) {
+        total = total % 10;
+      }
+      const expect = Number(vat.slice(9, 10));
+      return total === expect;
+    }
+    return false;
+  }
+  function _check12DigitINN(vat, rules) {
+    let total1 = 0;
+    let total2 = 0;
+    if (vat.length === 12) {
+      for (let j = 0; j < 11; j++) {
+        total1 += Number(vat.charAt(j)) * rules.multipliers.m_2[j];
+      }
+      total1 = total1 % 11;
+      if (total1 > 9) {
+        total1 = total1 % 10;
+      }
+      for (let k = 0; k < 11; k++) {
+        total2 += Number(vat.charAt(k)) * rules.multipliers.m_3[k];
+      }
+      total2 = total2 % 11;
+      if (total2 > 9) {
+        total2 = total2 % 10;
+      }
+      const expect = total1 === Number(vat.slice(10, 11));
+      const expect2 = total2 === Number(vat.slice(11, 12));
+      return expect && expect2;
+    }
+    return false;
+  }
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/serbia.js
+  var serbia = {
+    name: "Serbia",
+    codes: ["RS", "SRB", "688"],
+    calcFn: (vat) => {
+      let product = 10;
+      let sum = 0;
+      for (let i = 0; i < 8; i++) {
+        sum = (Number(vat.charAt(i)) + product) % 10;
+        if (sum === 0) {
+          sum = 10;
+        }
+        product = 2 * sum % 11;
+      }
+      const expect = 1;
+      const checkDigit2 = (product + Number(vat.slice(8, 9))) % 10;
+      return checkDigit2 === expect;
+    },
+    rules: {
+      multipliers: {},
+      regex: [/^(RS)(\d{9})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/slovakiaRepublic.js
+  var slovakiaRepublic = {
+    name: "Slovakia Republic",
+    codes: ["SK", "SVK", "703"],
+    calcFn: (vat) => {
+      const expect = 0;
+      const checkDigit2 = Number(vat) % 11;
+      return checkDigit2 === expect;
+    },
+    rules: {
+      multipliers: {},
+      regex: [/^(SK)([1-9]\d[2346-9]\d{7})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/slovenia.js
+  var slovenia = {
+    name: "Slovenia",
+    codes: ["SI", "SVN", "705"],
+    calcFn: (vat) => {
+      let total = 0;
+      for (let i = 0; i < 7; i++) {
+        total += Number(vat.charAt(i)) * slovenia.rules.multipliers.common[i];
+      }
+      total = 11 - total % 11;
+      if (total === 10) {
+        total = 0;
+      }
+      const expect = Number(vat.slice(7, 8));
+      return !!(total !== 11 && total === expect);
+    },
+    rules: {
+      multipliers: {
+        common: [8, 7, 6, 5, 4, 3, 2]
+      },
+      regex: [/^(SI)([1-9]\d{7})$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/spain.js
+  var spain = {
+    name: "Spain",
+    codes: ["ES", "ESP", "724"],
+    calcFn: (vat) => {
+      const { additional, multipliers } = spain.rules;
+      if (!additional)
+        return false;
+      if (additional[0].test(vat))
+        return isNationalJuridicalEntities(vat, multipliers.common);
+      if (additional[1].test(vat))
+        return isNonNationalJuridical(vat, multipliers.common);
+      if (additional[2].test(vat))
+        return isPersonalYtoZ(vat);
+      if (additional[3].test(vat))
+        return isPersonalKtoX(vat);
+      return false;
+    },
+    rules: {
+      multipliers: {
+        common: [2, 1, 2, 1, 2, 1, 2]
+      },
+      regex: [
+        /^(ES)([A-Z]\d{8})$/,
+        /^(ES)([A-HN-SW]\d{7}[A-J])$/,
+        /^(ES)([0-9YZ]\d{7}[A-Z])$/,
+        /^(ES)([KLMX]\d{7}[A-Z])$/
+      ],
+      additional: [/^[A-H|J|U|V]\d{8}$/, /^[A-H|N-S|W]\d{7}[A-J]$/, /^[0-9|Y|Z]\d{7}[A-Z]$/, /^[K|L|M|X]\d{7}[A-Z]$/]
+    }
+  };
+  function extractDigitAndMultiplyByCounter(vat, multipliers, total) {
+    let temp;
+    let result = total;
+    for (let i = 0; i < 7; i++) {
+      temp = Number(vat.charAt(i + 1)) * multipliers[i];
+      if (temp > 9) {
+        result += Math.floor(temp / 10) + temp % 10;
+      } else {
+        result += temp;
+      }
+    }
+    return result;
+  }
+  function isNationalJuridicalEntities(vat, multipliers) {
+    let total = extractDigitAndMultiplyByCounter(vat, multipliers, 0);
+    total = 10 - total % 10;
+    if (total === 10) {
+      total = 0;
+    }
+    const expect = Number(vat.slice(8, 9));
+    return total === expect;
+  }
+  function isNonNationalJuridical(vat, multipliers) {
+    let total = extractDigitAndMultiplyByCounter(vat, multipliers, 0);
+    total = 10 - total % 10;
+    const totalStr = String.fromCharCode(total + 64);
+    const expect = vat.slice(8, 9);
+    return totalStr === expect;
+  }
+  function isPersonalYtoZ(vat) {
+    let tempNumber = vat;
+    if (tempNumber.substring(0, 1) === "Y")
+      tempNumber = tempNumber.replace(/Y/, "1");
+    if (tempNumber.substring(0, 1) === "Z")
+      tempNumber = tempNumber.replace(/Z/, "2");
+    const expect = "TRWAGMYFPDXBNJZSQVHLCKE".charAt(+tempNumber.substring(0, 8) % 23);
+    return tempNumber.charAt(8) === expect;
+  }
+  function isPersonalKtoX(vat) {
+    const expect = "TRWAGMYFPDXBNJZSQVHLCKE".charAt(Number(vat.substring(1, 8)) % 23);
+    return vat.charAt(8) === expect;
+  }
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/sweden.js
+  var sweden = {
+    name: "Sweden",
+    codes: ["SE", "SWE", "752"],
+    calcFn: (vat) => {
+      let expect;
+      let R = 0;
+      for (let i = 0; i < 9; i = i + 2) {
+        const digit = Number(vat.charAt(i));
+        R += Math.floor(digit / 5) + digit * 2 % 10;
+      }
+      let S = 0;
+      for (let j = 1; j < 9; j = j + 2) {
+        S += Number(vat.charAt(j));
+      }
+      const checkDigit2 = (10 - (R + S) % 10) % 10;
+      expect = Number(vat.slice(9, 10));
+      return checkDigit2 === expect;
+    },
+    rules: {
+      multipliers: {},
+      regex: [/^(SE)(\d{10}01)$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/switzerland.js
+  var switzerland = {
+    name: "Switzerland",
+    codes: ["CH", "CHE", "756"],
+    calcFn: (vat) => {
+      let total = 0;
+      for (let i = 0; i < 8; i++) {
+        total += Number(vat.charAt(i)) * switzerland.rules.multipliers.common[i];
+      }
+      total = 11 - total % 11;
+      if (total === 10)
+        return false;
+      if (total === 11)
+        total = 0;
+      const expect = Number(vat.substr(8, 1));
+      return total === expect;
+    },
+    rules: {
+      multipliers: {
+        common: [5, 4, 3, 2, 7, 6, 5, 4]
+      },
+      regex: [/^(CHE)(\d{9})(MWST|TVA|IVA)?$/]
+    }
+  };
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/countries/unitedKingdom.js
+  var unitedKingdom = {
+    name: "United Kingdom",
+    codes: ["GB", "GBR", "826"],
+    calcFn: (vat) => {
+      if (vat.substr(0, 2) === "GD")
+        return isGovernmentDepartment(vat);
+      if (vat.substr(0, 2) === "HA")
+        return isHealthAuthorities(vat);
+      return isStandardOrCommercialNumber(vat, unitedKingdom.rules.multipliers.common);
+    },
+    rules: {
+      multipliers: {
+        common: [8, 7, 6, 5, 4, 3, 2]
+      },
+      regex: [/^(GB)?(\d{9})$/, /^(GB)?(\d{12})$/, /^(GB)?(GD\d{3})$/, /^(GB)?(HA\d{3})$/]
+    }
+  };
+  function isGovernmentDepartment(vat) {
+    const expect = 500;
+    return Number(vat.substr(2, 3)) < expect;
+  }
+  function isHealthAuthorities(vat) {
+    const expect = 499;
+    return Number(vat.substr(2, 3)) > expect;
+  }
+  function isStandardOrCommercialNumber(vat, multipliers) {
+    let total = 0;
+    if (Number(vat.slice(0)) === 0)
+      return false;
+    const no = Number(vat.slice(0, 7));
+    for (let i = 0; i < 7; i++) {
+      total += Number(vat.charAt(i)) * multipliers[i];
+    }
+    let checkDigit2 = total;
+    while (checkDigit2 > 0) {
+      checkDigit2 = checkDigit2 - 97;
+    }
+    checkDigit2 = Math.abs(checkDigit2);
+    if (checkDigit2 === Number(vat.slice(7, 9)) && no < 9990001 && (no < 1e5 || no > 999999) && (no < 9490001 || no > 97e5)) {
+      return true;
+    }
+    if (checkDigit2 >= 55) {
+      checkDigit2 = checkDigit2 - 55;
+    } else {
+      checkDigit2 = checkDigit2 + 42;
+    }
+    const expect = Number(vat.slice(7, 9));
+    return Boolean(checkDigit2 === expect && no > 1e6);
+  }
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/lib/jsvat.js
+  function makeResult(vat, isValid, country) {
+    return {
+      value: vat || void 0,
+      isValid: Boolean(isValid),
+      isValidFormat: country ? isVatValidToRegexp(vat, country.rules.regex).isValid : false,
+      isSupportedCountry: Boolean(country),
+      country: !country ? void 0 : {
+        name: country.name,
+        isoCode: {
+          short: country.codes[0],
+          long: country.codes[1],
+          numeric: country.codes[2]
+        }
+      }
+    };
+  }
+  function removeExtraChars(vat = "") {
+    return vat.toString().toUpperCase().replace(/(\s|-|\.|\/)+/g, "");
+  }
+  function getCountryCodes(country) {
+    return [...country.codes, country.name === "Greece" ? "EL" : void 0].filter(Boolean);
+  }
+  var countriesVATDoesNotStartWithCountryCode = [brazil.name];
+  function isVATStartWithCountryCode(countryName) {
+    return !countriesVATDoesNotStartWithCountryCode.includes(countryName);
+  }
+  function isVATStartWithNumber(vat) {
+    return !!vat.match(/^\d{2}/);
+  }
+  function getCountry(vat, countriesList) {
+    for (const country of countriesList) {
+      if (startsWithCode(vat, country) || !isVATStartWithCountryCode(country.name) && isVATStartWithNumber(vat)) {
+        return { ...country };
+      }
+    }
+    return void 0;
+  }
+  function startsWithCode(vat, country) {
+    const countryCodes = getCountryCodes(country);
+    return countryCodes.filter((code) => vat.startsWith(code)).length > 0;
+  }
+  function isVatValidToRegexp(vat, regexArr) {
+    for (const regex of regexArr) {
+      const isValid = regex.test(vat);
+      if (isValid)
+        return { isValid: true, regex };
+    }
+    return { isValid: false, regex: void 0 };
+  }
+  function isVatValid(vat, country) {
+    const regexpValidRes = isVatValidToRegexp(vat, country.rules.regex);
+    if (!regexpValidRes.isValid || !regexpValidRes.regex)
+      return false;
+    const regexResult = regexpValidRes.regex.exec(vat);
+    if (!regexResult)
+      return false;
+    return country.calcFn(regexResult[2]);
+  }
+  function checkVAT(vat, countriesList = []) {
+    if (!vat)
+      return makeResult(vat, false);
+    const cleanVAT = removeExtraChars(vat);
+    const country = getCountry(cleanVAT, countriesList);
+    const isValid = country ? isVatValid(cleanVAT, country) : false;
+    return makeResult(cleanVAT, isValid, country);
+  }
+
+  // node_modules/.pnpm/jsvat@2.5.4/node_modules/jsvat/lib/es6/index.js
+  var countries = [
+    andorra,
+    austria,
+    belgium,
+    brazil,
+    bulgaria,
+    croatia,
+    cyprus,
+    czechRepublic,
+    denmark,
+    estonia,
+    europe,
+    finland,
+    france,
+    germany,
+    greece,
+    hungary,
+    ireland,
+    italy,
+    latvia,
+    lithuania,
+    luxembourg,
+    malta,
+    netherlands,
+    norway,
+    poland,
+    portugal,
+    romania,
+    russia,
+    serbia,
+    slovakiaRepublic,
+    slovenia,
+    spain,
+    sweden,
+    switzerland,
+    unitedKingdom
+  ];
+
+  // src/validations/validation-vatid.ts
+  var isPolishSite = document.documentElement.lang?.toLowerCase().startsWith("pl");
+  var SUPPORTED_COUNTRIES = countries.map((country) => ({
+    code: country.codes[0],
+    emoji: getCountryEmoji(country.codes[0]),
+    pattern: country.rules.regex[0],
+    messages: {
+      tooShort: isPolishSite ? `NIP jest za kr\xF3tki` : `VAT number is too short`,
+      tooLong: isPolishSite ? `NIP jest za d\u0142ugi` : `VAT number is too long`,
+      invalid: isPolishSite ? `Nieprawid\u0142owy numer NIP` : `Invalid VAT number format`
+    }
+  }));
+  function getCountryEmoji(countryCode) {
+    const offset = 127397;
+    const emoji = countryCode.toUpperCase().split("").map((char) => String.fromCodePoint(char.charCodeAt(0) + offset)).join("");
+    return emoji;
+  }
+  function VatValidation() {
+    const elements2 = {
+      vatInput: document.querySelector(VATID_INPUT_ELEMENT),
+      vatMessage: document.querySelector(VATID_FEEDBACK_ELEMENT),
+      vatSelect: document.querySelector(VATID_COUNTRY_ELEMENT)
+    };
+    if (!elements2.vatInput || !elements2.vatMessage) return;
+    elements2.submitButton = elements2.vatInput.closest("form")?.querySelector('button[type="submit"], input[type="submit"]') || void 0;
+    function getBrowserCountry() {
+      const browserLang = navigator.language;
+      const countryCode = browserLang.split("-")[1]?.toUpperCase() || browserLang.toUpperCase();
+      const isValidCountry = SUPPORTED_COUNTRIES.some((country) => country.code === countryCode);
+      if (isPolishSite) {
+        return isValidCountry ? countryCode : "PL";
+      }
+      return isValidCountry ? countryCode : "GB";
+    }
+    function createVatSelect() {
+      const select = document.createElement("select");
+      select.setAttribute("data-vat-country", "");
+      const defaultCountry = getBrowserCountry();
+      SUPPORTED_COUNTRIES.forEach((country) => {
+        const option = document.createElement("option");
+        option.value = country.code;
+        option.textContent = `${country.emoji} ${country.code}`;
+        option.selected = country.code === defaultCountry;
+        select.appendChild(option);
+      });
+      return select;
+    }
+    if (!elements2.vatSelect) {
+      const select = createVatSelect();
+      elements2.vatInput.parentNode?.insertBefore(select, elements2.vatInput);
+      elements2.vatSelect = select;
+    } else {
+      elements2.vatSelect.innerHTML = "";
+      const defaultCountry = getBrowserCountry();
+      SUPPORTED_COUNTRIES.forEach((country) => {
+        const option = document.createElement("option");
+        option.value = country.code;
+        option.textContent = `${country.emoji} ${country.code}`;
+        option.selected = country.code === defaultCountry;
+        elements2.vatSelect?.appendChild(option);
+      });
+    }
+    function extractCountryCode(vat) {
+      const cleanVat = vat.replace(/[\s-]/g, "");
+      const countryCodeMatch = cleanVat.match(/^([A-Za-z]{2})/);
+      if (countryCodeMatch) {
+        const countryCode = countryCodeMatch[1].toUpperCase();
+        const isValidCountry = SUPPORTED_COUNTRIES.some((country) => country.code === countryCode);
+        if (isValidCountry) {
+          return {
+            countryCode,
+            vatNumber: cleanVat.substring(2)
+          };
+        }
+      }
+      return {
+        countryCode: null,
+        vatNumber: cleanVat
+      };
+    }
+    function getSelectedCountry() {
+      return elements2.vatSelect ? elements2.vatSelect.value : getBrowserCountry();
+    }
+    function validateVatId(vat) {
+      const { countryCode, vatNumber } = extractCountryCode(vat);
+      const selectedCountry = countryCode || getSelectedCountry();
+      if (countryCode && elements2.vatSelect && elements2.vatSelect.value !== countryCode) {
+        elements2.vatSelect.value = countryCode;
+      }
+      const countryConfig = SUPPORTED_COUNTRIES.find((config) => config.code === selectedCountry);
+      if (!countryConfig) return { isValid: false, error: "Unsupported country" };
+      const fullVatNumber = `${selectedCountry}${vatNumber}`;
+      if (!countryConfig.pattern.test(fullVatNumber)) {
+        if (vatNumber.length > countryConfig.pattern.toString().length - 2) {
+          return { isValid: false, error: countryConfig.messages.tooLong };
+        }
+        if (vatNumber.length < countryConfig.pattern.toString().length - 2) {
+          return { isValid: false, error: countryConfig.messages.tooShort };
+        }
+        return { isValid: false, error: countryConfig.messages.invalid };
+      }
+      const jsvatResult = checkVAT(fullVatNumber, countries);
+      return jsvatResult.isValid ? { isValid: true, normalizedVatId: fullVatNumber } : { isValid: false, error: countryConfig.messages.invalid };
+    }
+    function updateSubmitButtonState(isValid) {
+      if (elements2.submitButton) {
+        const form2 = elements2.vatInput.closest("form");
+        if (form2) {
+          const requiredFields = Array.from(form2.querySelectorAll("[required]"));
+          const allRequiredFieldsFilled = requiredFields.every((field) => {
+            if (field instanceof HTMLInputElement && (field.type === "checkbox" || field.type === "radio")) {
+              return field.checked;
+            }
+            return field.value.trim() !== "";
+          });
+          elements2.submitButton.disabled = !isValid || !allRequiredFieldsFilled;
+        } else {
+          elements2.submitButton.disabled = !isValid;
+        }
+        if (elements2.submitButton.disabled) {
+          elements2.submitButton.style.cursor = styles.error.cursor;
+          elements2.submitButton.style.opacity = styles.error.opacity;
+        } else {
+          elements2.submitButton.style.cursor = styles.normal.cursor;
+          elements2.submitButton.style.opacity = styles.normal.opacity;
+        }
+      }
     }
     function showValidationError(message) {
-      elements.vatIdMessage.style.display = "block";
-      elements.vatIdMessage.innerText = message;
-      elements.vatIdMessage.style.color = styles.error.color;
-      elements.vatIdInput.style.borderBottomColor = styles.error.color;
+      elements2.vatMessage.style.display = "block";
+      elements2.vatMessage.innerText = message;
+      elements2.vatMessage.style.color = styles.error.color;
+      elements2.vatInput.style.borderBottomColor = styles.error.color;
+      elements2.vatSelect.style.borderBottomColor = styles.error.color;
+      updateSubmitButtonState(false);
     }
     function resetValidationState() {
-      elements.vatIdMessage.style.display = "none";
-      elements.vatIdMessage.innerText = "";
-      elements.vatIdInput.style.borderBottomColor = styles.normal.color;
+      elements2.vatMessage.style.display = "none";
+      elements2.vatMessage.innerText = "";
+      elements2.vatInput.style.borderBottomColor = styles.normal.color;
+      elements2.vatSelect.style.borderBottomColor = styles.normal.color;
+      const currentVatValidation = validateVatId(elements2.vatInput.value);
+      updateSubmitButtonState(currentVatValidation.isValid);
     }
-    function handleVatIdValidation(value) {
-      const result = validatePolishVatId(value);
+    function handleVatIdValidation() {
+      const { value } = elements2.vatInput;
+      const result = validateVatId(value);
       if (result.isValid) {
         resetValidationState();
-      } else if (value.length > VATID_VALID_LENGTH) {
-        showValidationError(VATID_MSG_CHARS_EXCEED);
-      } else if (value.length < VATID_VALID_LENGTH) {
-        showValidationError(VATID_MSG_CHARS_RECEDE);
-      } else {
-        showValidationError(VATID_MSG_CHARS_INVALID);
+      } else if (result.error) {
+        showValidationError(result.error);
       }
     }
     function observeElement(element, property, callback, delay = 0) {
@@ -6274,24 +7699,53 @@
         }
       }
     }
-    elements.vatIdInput.addEventListener("input", (e) => {
-      const target = e.target;
-      handleVatIdValidation(target.value);
+    const form = elements2.vatInput.closest("form");
+    if (form) {
+      const inputSelector = "input, select, textarea";
+      form.querySelectorAll(inputSelector).forEach((input) => {
+        input.addEventListener("input", () => {
+          const currentVatValidation = validateVatId(elements2.vatInput.value);
+          updateSubmitButtonState(currentVatValidation.isValid);
+        });
+        input.addEventListener("change", () => {
+          const currentVatValidation = validateVatId(elements2.vatInput.value);
+          updateSubmitButtonState(currentVatValidation.isValid);
+        });
+      });
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node instanceof HTMLElement && node.matches(inputSelector)) {
+              node.addEventListener("input", () => {
+                const currentVatValidation = validateVatId(elements2.vatInput.value);
+                updateSubmitButtonState(currentVatValidation.isValid);
+              });
+              node.addEventListener("change", () => {
+                const currentVatValidation = validateVatId(elements2.vatInput.value);
+                updateSubmitButtonState(currentVatValidation.isValid);
+              });
+            }
+          });
+        });
+      });
+      observer.observe(form, {
+        childList: true,
+        subtree: true
+      });
+    }
+    elements2.vatInput.addEventListener("input", handleVatIdValidation);
+    elements2.vatSelect?.addEventListener("change", handleVatIdValidation);
+    observeElement(elements2.vatInput, "value", () => {
+      handleVatIdValidation();
     });
-    observeElement(elements.vatIdInput, "value", (newValue) => {
-      handleVatIdValidation(String(newValue));
-    });
+    handleVatIdValidation();
   }
 
   // src/index.ts
-  function FormValidation() {
-    console.log("works!");
-  }
   window.Webflow ||= [];
   window.Webflow.push(() => {
     EmailValidation();
     VatValidation();
-    FormValidation();
   });
 })();
 //# sourceMappingURL=index.js.map

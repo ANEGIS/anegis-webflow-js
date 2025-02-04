@@ -11,6 +11,9 @@ importers:
       '@finsweet/ts-utils':
         specifier: ^0.40.0
         version: 0.40.0
+      jsvat:
+        specifier: ^2.5.4
+        version: 2.5.4
     devDependencies:
       '@changesets/changelog-git':
         specifier: ^0.2.0
@@ -764,6 +767,9 @@ packages:
 
   jsonfile@4.0.0:
     resolution: {integrity: sha512-m6F1R3z8jjlf2imQHS2Qez5sjKWQzbuuhuJ/FKYFRZvPE3PuHcSMVZzfsLhGVOkfd20obL5SWEBew5ShlquNxg==}
+
+  jsvat@2.5.4:
+    resolution: {integrity: sha512-l5RHVBQpb738Bg/R4cEDHr4nXW/SDgVWckNjgay4S9xSRLuPjFanX9I4ZYjtb4G1PHusl70iWOqkRsn/fCYN5g==}
 
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
@@ -1808,6 +1814,8 @@ snapshots:
   jsonfile@4.0.0:
     optionalDependencies:
       graceful-fs: 4.2.11
+
+  jsvat@2.5.4: {}
 
   keyv@4.5.4:
     dependencies:
