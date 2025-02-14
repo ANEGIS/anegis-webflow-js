@@ -10,16 +10,67 @@ import type { DOMElementsVatValidation, ValidationResult } from '../types/valida
 
 const isPolishSite = document.documentElement.lang?.toLowerCase().startsWith('pl');
 
-const SUPPORTED_COUNTRIES = countries.map((country) => ({
-  code: country.codes[0],
-  emoji: getCountryEmoji(country.codes[0]),
-  pattern: country.rules.regex[0],
-  messages: {
-    tooShort: isPolishSite ? `NIP jest za krótki` : `VAT number is too short`,
-    tooLong: isPolishSite ? `NIP jest za długi` : `VAT number is too long`,
-    invalid: isPolishSite ? `Nieprawidłowy numer NIP` : `Invalid VAT number format`,
+// Custom patterns for non-EU countries
+
+const SUPPORTED_COUNTRIES = [
+  ...countries.map((country) => ({
+    code: country.codes[0],
+    emoji: getCountryEmoji(country.codes[0]),
+    pattern: country.rules.regex[0],
+    messages: {
+      tooShort: isPolishSite ? `NIP jest za krótki` : `VAT number is too short`,
+      tooLong: isPolishSite ? `NIP jest za długi` : `VAT number is too long`,
+      invalid: isPolishSite ? `Nieprawidłowy numer NIP` : `Invalid VAT number format`,
+    },
+  })),
+  // Additional non-EU countries
+  {
+    code: 'US',
+    emoji: getCountryEmoji('US'),
+    pattern: {
+      US: /^\d{2}-\d{7}$/,
+      CA: /^\d{9}(RT|rt)\d{4}$/,
+      AE: /^[0-9]{15}$/,
+    }.US,
+    messages: {
+      tooShort: isPolishSite ? `Numer EIN jest za krótki` : `EIN is too short`,
+      tooLong: isPolishSite ? `Numer EIN jest za długi` : `EIN is too long`,
+      invalid: isPolishSite ? `Nieprawidłowy numer EIN` : `Invalid EIN format`,
+    },
   },
-}));
+  {
+    code: 'CA',
+    emoji: getCountryEmoji('CA'),
+    pattern: {
+      US: /^\d{2}-\d{7}$/,
+      CA: /^\d{9}(RT|rt)\d{4}$/,
+      AE: /^[0-9]{15}$/,
+    }.CA,
+    messages: {
+      tooShort: isPolishSite
+        ? `Numer BN musi mieć co najmniej 9 cyfr`
+        : `Business Number must be at least 9 digits`,
+      tooLong: isPolishSite ? `Numer BN jest za długi` : `Business Number is too long`,
+      invalid: isPolishSite
+        ? `Nieprawidłowy format numeru BN (9 cyfr lub 9 cyfr + RT/RC + 4 cyfry)`
+        : `Invalid format (9 digits or 9 digits + RT/RC + 4 digits)`,
+    },
+  },
+  {
+    code: 'AE',
+    emoji: getCountryEmoji('AE'),
+    pattern: {
+      US: /^\d{2}-\d{7}$/,
+      CA: /^\d{9}(RT|rt)\d{4}$/,
+      AE: /^[0-9]{15}$/,
+    }.AE,
+    messages: {
+      tooShort: isPolishSite ? `Numer TRN jest za krótki` : `TRN is too short`,
+      tooLong: isPolishSite ? `Numer TRN jest za długi` : `TRN is too long`,
+      invalid: isPolishSite ? `Nieprawidłowy numer TRN` : `Invalid TRN format`,
+    },
+  },
+];
 
 function getCountryEmoji(countryCode: string) {
   const offset = 127397;
@@ -90,8 +141,7 @@ export default function VatValidation() {
   }
 
   function extractCountryCode(vat: string): { countryCode: string | null; vatNumber: string } {
-    const cleanVat = vat.replace(/[\s-]/g, '');
-    const countryCodeMatch = cleanVat.match(/^([A-Za-z]{2})/);
+    const countryCodeMatch = vat.match(/^([A-Za-z]{2})/);
 
     if (countryCodeMatch) {
       const countryCode = countryCodeMatch[1].toUpperCase();
@@ -99,14 +149,14 @@ export default function VatValidation() {
       if (isValidCountry) {
         return {
           countryCode,
-          vatNumber: cleanVat.substring(2),
+          vatNumber: vat.substring(2),
         };
       }
     }
 
     return {
       countryCode: null,
-      vatNumber: cleanVat,
+      vatNumber: vat,
     };
   }
 
@@ -115,7 +165,9 @@ export default function VatValidation() {
   }
 
   function validateVatId(vat: string): ValidationResult {
-    const { countryCode, vatNumber } = extractCountryCode(vat);
+    // Clean the input of spaces and hyphens
+    const cleanedVat = vat.replace(/[\s-]/g, '');
+    const { countryCode, vatNumber } = extractCountryCode(cleanedVat);
     const selectedCountry = countryCode || getSelectedCountry();
 
     // Update dropdown if country code is detected in input
@@ -126,6 +178,34 @@ export default function VatValidation() {
     const countryConfig = SUPPORTED_COUNTRIES.find((config) => config.code === selectedCountry);
     if (!countryConfig) return { isValid: false, error: 'Unsupported country' };
 
+    // Special handling for non-EU countries
+    if (['US', 'CA', 'AE'].includes(selectedCountry)) {
+      // Add hyphens back for US EIN if missing
+      let formattedNumber = vatNumber;
+      if (selectedCountry === 'US' && !vatNumber.includes('-')) {
+        formattedNumber = `${vatNumber.slice(0, 2)}-${vatNumber.slice(2)}`;
+      }
+
+      const pattern = {
+        US: /^\d{2}-\d{7}$/,
+        CA: /^\d{9}(RT|rt)\d{4}$/,
+        AE: /^[0-9]{15}$/,
+      }[selectedCountry];
+      if (pattern) {
+        if (!pattern.test(formattedNumber)) {
+          if (formattedNumber.length > pattern.toString().length) {
+            return { isValid: false, error: countryConfig.messages.tooLong };
+          }
+          if (formattedNumber.length < pattern.toString().length) {
+            return { isValid: false, error: countryConfig.messages.tooShort };
+          }
+          return { isValid: false, error: countryConfig.messages.invalid };
+        }
+        return { isValid: true, normalizedVatId: formattedNumber };
+      }
+    }
+
+    // EU VAT validation
     const fullVatNumber = `${selectedCountry}${vatNumber}`;
     if (!countryConfig.pattern.test(fullVatNumber)) {
       if (vatNumber.length > countryConfig.pattern.toString().length - 2) {
