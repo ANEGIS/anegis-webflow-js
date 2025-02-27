@@ -53,7 +53,7 @@
   },
   "dependencies": {
     "@finsweet/ts-utils": "^0.40.0",
-    "jsvat": "^2.5.4"
+    "anegis-jsvat": "2.5.4-ANEGIS-0.1"
   },
   "engines": {
     "pnpm": ">=9"
