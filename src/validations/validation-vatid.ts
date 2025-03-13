@@ -127,32 +127,7 @@ export default function VatValidation() {
     const countryConfig = SUPPORTED_COUNTRIES.find((config) => config.code === selectedCountry);
     if (!countryConfig) return { isValid: false, error: 'Unsupported country' };
 
-    if (['US', 'CA', 'AE'].includes(selectedCountry)) {
-      let formattedNumber = vatNumber;
-      if (selectedCountry === 'US' && !vatNumber.includes('-')) {
-        formattedNumber = `${vatNumber.slice(0, 2)}-${vatNumber.slice(2)}`;
-      }
-
-      const pattern = {
-        US: /^\d{2}-\d{7}$/,
-        CA: /^\d{9}(RT|rt)\d{4}$/,
-        AE: /^[0-9]{15}$/,
-      }[selectedCountry];
-      if (pattern) {
-        if (!pattern.test(formattedNumber)) {
-          if (formattedNumber.length > pattern.toString().length) {
-            return { isValid: false, error: countryConfig.messages.tooLong };
-          }
-          if (formattedNumber.length < pattern.toString().length) {
-            return { isValid: false, error: countryConfig.messages.tooShort };
-          }
-          return { isValid: false, error: countryConfig.messages.invalid };
-        }
-        return { isValid: true, normalizedVatId: formattedNumber };
-      }
-    }
-
-    // EU VAT validation
+    // EU VAT validation using anegis-jsvat for all countries
     const fullVatNumber = `${selectedCountry}${vatNumber}`;
     if (!countryConfig.pattern.test(fullVatNumber)) {
       if (vatNumber.length > countryConfig.pattern.toString().length - 2) {
