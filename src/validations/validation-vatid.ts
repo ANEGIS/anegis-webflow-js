@@ -34,20 +34,40 @@ function getCountryEmoji(countryCode: string) {
 }
 
 export default function VatValidation() {
+  const vatForms = document.querySelectorAll(`form:has(${VATID_INPUT_ELEMENT})`);
+
+  if (vatForms.length === 0) {
+    initializeVatValidation(document);
+    return;
+  }
+
+  vatForms.forEach((form, index) => {
+    initializeVatValidation(form, index);
+  });
+}
+
+function initializeVatValidation(container, formIndex = 0) {
   const elements: DOMElementsVatValidation & {
     submitButton?: HTMLButtonElement | HTMLInputElement;
+    form?: HTMLFormElement;
   } = {
-    vatInput: document.querySelector(VATID_INPUT_ELEMENT) as HTMLInputElement,
-    vatMessage: document.querySelector(VATID_FEEDBACK_ELEMENT) as HTMLElement,
-    vatSelect: document.querySelector(VATID_COUNTRY_ELEMENT) as HTMLSelectElement,
+    vatInput: container.querySelector(VATID_INPUT_ELEMENT) as HTMLInputElement,
+    vatMessage: container.querySelector(VATID_FEEDBACK_ELEMENT) as HTMLElement,
+    vatSelect: container.querySelector(VATID_COUNTRY_ELEMENT) as HTMLSelectElement,
   };
 
-  if (!elements.vatInput || !elements.vatMessage) return;
+  if (!elements.vatInput) return;
 
+  if (!elements.vatMessage) {
+    elements.vatMessage = document.createElement('div');
+    elements.vatMessage.setAttribute('data-vat-feedback', '');
+    elements.vatMessage.style.display = 'none';
+    elements.vatInput.insertAdjacentElement('afterend', elements.vatMessage);
+  }
+
+  elements.form = elements.vatInput.closest('form');
   elements.submitButton =
-    elements.vatInput
-      .closest('form')
-      ?.querySelector('button[type="submit"], input[type="submit"]') || undefined;
+    elements.form?.querySelector('button[type="submit"], input[type="submit"]') || undefined;
 
   function getBrowserCountry(): string {
     const browserLang = navigator.language;
@@ -62,6 +82,7 @@ export default function VatValidation() {
   function createVatSelect(): HTMLSelectElement {
     const select = document.createElement('select');
     select.setAttribute('data-vat-country', '');
+    select.setAttribute('data-form-index', formIndex.toString());
     const defaultCountry = getBrowserCountry();
 
     SUPPORTED_COUNTRIES.forEach((country) => {
@@ -81,6 +102,7 @@ export default function VatValidation() {
     elements.vatSelect = select;
   } else {
     elements.vatSelect.innerHTML = '';
+    elements.vatSelect.setAttribute('data-form-index', formIndex.toString());
     const defaultCountry = getBrowserCountry();
     SUPPORTED_COUNTRIES.forEach((country) => {
       const option = document.createElement('option');
@@ -90,6 +112,9 @@ export default function VatValidation() {
       elements.vatSelect?.appendChild(option);
     });
   }
+
+  elements.vatInput.setAttribute('data-form-index', formIndex.toString());
+  elements.vatMessage.setAttribute('data-form-index', formIndex.toString());
 
   function extractCountryCode(vat: string): { countryCode: string | null; vatNumber: string } {
     const countryCodeMatch = vat.match(/^([A-Za-z]{2})/);
@@ -127,7 +152,6 @@ export default function VatValidation() {
     const countryConfig = SUPPORTED_COUNTRIES.find((config) => config.code === selectedCountry);
     if (!countryConfig) return { isValid: false, error: 'Unsupported country' };
 
-    // EU VAT validation using anegis-jsvat for all countries
     const fullVatNumber = `${selectedCountry}${vatNumber}`;
     if (!countryConfig.pattern.test(fullVatNumber)) {
       if (vatNumber.length > countryConfig.pattern.toString().length - 2) {
@@ -146,27 +170,22 @@ export default function VatValidation() {
   }
 
   function updateSubmitButtonState(isValid: boolean): void {
-    if (elements.submitButton) {
-      const form = elements.vatInput.closest('form');
-      if (form) {
-        const requiredFields = Array.from(form.querySelectorAll('[required]')) as Array<
-          HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-        >;
+    if (elements.submitButton && elements.form) {
+      const requiredFields = Array.from(elements.form.querySelectorAll('[required]')) as Array<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >;
 
-        const allRequiredFieldsFilled = requiredFields.every((field) => {
-          if (
-            field instanceof HTMLInputElement &&
-            (field.type === 'checkbox' || field.type === 'radio')
-          ) {
-            return field.checked;
-          }
-          return field.value.trim() !== '';
-        });
+      const allRequiredFieldsFilled = requiredFields.every((field) => {
+        if (
+          field instanceof HTMLInputElement &&
+          (field.type === 'checkbox' || field.type === 'radio')
+        ) {
+          return field.checked;
+        }
+        return field.value.trim() !== '';
+      });
 
-        elements.submitButton.disabled = !isValid || !allRequiredFieldsFilled;
-      } else {
-        elements.submitButton.disabled = !isValid;
-      }
+      elements.submitButton.disabled = !isValid || !allRequiredFieldsFilled;
 
       if (elements.submitButton.disabled) {
         elements.submitButton.style.cursor = styles.error.cursor;
@@ -238,10 +257,9 @@ export default function VatValidation() {
     }
   }
 
-  const form = elements.vatInput.closest('form');
-  if (form) {
+  if (elements.form) {
     const inputSelector = 'input, select, textarea';
-    form.querySelectorAll(inputSelector).forEach((input) => {
+    elements.form.querySelectorAll(inputSelector).forEach((input) => {
       input.addEventListener('input', () => {
         const currentVatValidation = validateVatId(elements.vatInput.value);
         updateSubmitButtonState(currentVatValidation.isValid);
@@ -271,7 +289,7 @@ export default function VatValidation() {
       });
     });
 
-    observer.observe(form, {
+    observer.observe(elements.form, {
       childList: true,
       subtree: true,
     });
