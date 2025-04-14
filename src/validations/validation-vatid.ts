@@ -150,7 +150,7 @@ function initializeVatValidation(container, formIndex = 0) {
     }
 
     const countryConfig = SUPPORTED_COUNTRIES.find((config) => config.code === selectedCountry);
-    if (!countryConfig) return { isValid: false, error: 'Unsupported country' };
+    if (!countryConfig) return { isValid: false, error: 'Contact us via email: sales@anegis.com' };
 
     const fullVatNumber = `${selectedCountry}${vatNumber}`;
     if (!countryConfig.pattern.test(fullVatNumber)) {
