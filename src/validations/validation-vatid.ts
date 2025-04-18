@@ -14,10 +14,10 @@ const SUPPORTED_COUNTRIES = [
   ...countries.map((country) => ({
     code: country.codes[0],
     emoji: getCountryEmoji(country.codes[0]),
-    pattern: country.rules.regex[0],
+    // pattern: country.rules.regex[0],
     messages: {
-      tooShort: isPolishSite ? `NIP jest za krótki` : `VAT number is too short`,
-      tooLong: isPolishSite ? `NIP jest za długi` : `VAT number is too long`,
+      tooShort: isPolishSite ? `Nieprawidłowy numer NIP` : `Invalid VAT number format`,
+      tooLong: isPolishSite ? `Nieprawidłowy numer NIP` : `Invalid VAT number format`,
       invalid: isPolishSite ? `Nieprawidłowy numer NIP` : `Invalid VAT number format`,
     },
   })),
