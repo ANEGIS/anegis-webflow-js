@@ -14,7 +14,7 @@ const SUPPORTED_COUNTRIES = [
   ...countries.map((country) => ({
     code: country.codes[0],
     emoji: getCountryEmoji(country.codes[0]),
-    // pattern: country.rules.regex[0],
+    pattern: country.rules.regex[0],
     messages: {
       tooShort: isPolishSite ? `Nieprawidłowy numer NIP` : `Invalid VAT number format`,
       tooLong: isPolishSite ? `Nieprawidłowy numer NIP` : `Invalid VAT number format`,
@@ -57,6 +57,9 @@ function initializeVatValidation(container, formIndex = 0) {
   };
 
   if (!elements.vatInput) return;
+
+  let isVatValid = false;
+  let hasErrorMessage = false;
 
   if (!elements.vatMessage) {
     elements.vatMessage = document.createElement('div');
@@ -169,7 +172,7 @@ function initializeVatValidation(container, formIndex = 0) {
       : { isValid: false, error: countryConfig.messages.invalid };
   }
 
-  function updateSubmitButtonState(isValid: boolean): void {
+  function updateSubmitButtonState(forceDisable = false): void {
     if (elements.submitButton && elements.form) {
       const requiredFields = Array.from(elements.form.querySelectorAll('[required]')) as Array<
         HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -185,7 +188,9 @@ function initializeVatValidation(container, formIndex = 0) {
         return field.value.trim() !== '';
       });
 
-      elements.submitButton.disabled = !isValid || !allRequiredFieldsFilled;
+      const shouldDisable =
+        forceDisable || !isVatValid || !allRequiredFieldsFilled || hasErrorMessage;
+      elements.submitButton.disabled = shouldDisable;
 
       if (elements.submitButton.disabled) {
         elements.submitButton.style.cursor = styles.error.cursor;
@@ -198,25 +203,40 @@ function initializeVatValidation(container, formIndex = 0) {
   }
 
   function showValidationError(message: string): void {
+    isVatValid = false;
+    hasErrorMessage = true;
+
     elements.vatMessage.style.display = 'block';
     elements.vatMessage.innerText = message;
-    elements.vatMessage.style.color = styles.error.color;
-    elements.vatInput.style.borderBottomColor = styles.error.color;
-    elements.vatSelect.style.borderBottomColor = styles.error.color;
-    updateSubmitButtonState(false);
+    if (window.location.toString().includes('anegis')) {
+      elements.vatMessage.style.color = styles.error.color;
+      elements.vatInput.style.borderBottomColor = styles.error.color;
+      elements.vatSelect.style.borderBottomColor = styles.error.color;
+    }
+
+    updateSubmitButtonState(true);
   }
 
   function resetValidationState(): void {
+    isVatValid = true;
+    hasErrorMessage = false;
+
     elements.vatMessage.style.display = 'none';
     elements.vatMessage.innerText = '';
     elements.vatInput.style.borderBottomColor = styles.normal.color;
     elements.vatSelect.style.borderBottomColor = styles.normal.color;
-    const currentVatValidation = validateVatId(elements.vatInput.value);
-    updateSubmitButtonState(currentVatValidation.isValid);
+
+    updateSubmitButtonState();
   }
 
   function handleVatIdValidation(): void {
     const { value } = elements.vatInput;
+
+    if (!value && !elements.vatInput.hasAttribute('required')) {
+      resetValidationState();
+      return;
+    }
+
     const result = validateVatId(value);
 
     if (result.isValid) {
@@ -225,6 +245,24 @@ function initializeVatValidation(container, formIndex = 0) {
       showValidationError(result.error);
     }
   }
+
+  function hasVisibleErrorMessage(): boolean {
+    return (
+      elements.vatMessage.style.display === 'block' && elements.vatMessage.innerText.trim() !== ''
+    );
+  }
+
+  function forceButtonStateConsistency() {
+    if (hasVisibleErrorMessage() && elements.submitButton && !elements.submitButton.disabled) {
+      elements.submitButton.disabled = true;
+      elements.submitButton.style.cursor = styles.error.cursor;
+      elements.submitButton.style.opacity = styles.error.opacity;
+    }
+
+    setTimeout(forceButtonStateConsistency, 50);
+  }
+
+  forceButtonStateConsistency();
 
   function observeElement<T extends HTMLElement>(
     element: T,
@@ -257,17 +295,82 @@ function initializeVatValidation(container, formIndex = 0) {
     }
   }
 
+  if (elements.submitButton) {
+    const buttonObserver = new MutationObserver(() => {
+      if (hasVisibleErrorMessage() && !elements.submitButton.disabled) {
+        elements.submitButton.disabled = true;
+        elements.submitButton.style.cursor = styles.error.cursor;
+        elements.submitButton.style.opacity = styles.error.opacity;
+      }
+    });
+
+    buttonObserver.observe(elements.submitButton, {
+      attributes: true,
+      attributeFilter: ['disabled'],
+    });
+  }
+
   if (elements.form) {
+    const originalSubmit = elements.form.submit;
+    elements.form.submit = function () {
+      if (hasVisibleErrorMessage()) {
+        return false;
+      }
+
+      return originalSubmit.apply(this, arguments);
+    };
+
+    elements.form.addEventListener(
+      'submit',
+      function (event) {
+        handleVatIdValidation();
+
+        if (hasVisibleErrorMessage()) {
+          event.preventDefault();
+          event.stopPropagation();
+
+          if (elements.submitButton) {
+            elements.submitButton.disabled = true;
+            elements.submitButton.style.cursor = styles.error.cursor;
+            elements.submitButton.style.opacity = styles.error.opacity;
+          }
+
+          return false;
+        }
+      },
+      true
+    );
+
     const inputSelector = 'input, select, textarea';
     elements.form.querySelectorAll(inputSelector).forEach((input) => {
       input.addEventListener('input', () => {
-        const currentVatValidation = validateVatId(elements.vatInput.value);
-        updateSubmitButtonState(currentVatValidation.isValid);
+        if (input === elements.vatInput) {
+          handleVatIdValidation();
+        } else if (hasVisibleErrorMessage()) {
+          updateSubmitButtonState(true);
+        } else {
+          updateSubmitButtonState();
+        }
       });
 
       input.addEventListener('change', () => {
-        const currentVatValidation = validateVatId(elements.vatInput.value);
-        updateSubmitButtonState(currentVatValidation.isValid);
+        if (input === elements.vatInput || input === elements.vatSelect) {
+          handleVatIdValidation();
+        } else if (hasVisibleErrorMessage()) {
+          updateSubmitButtonState(true);
+        } else {
+          updateSubmitButtonState();
+        }
+      });
+
+      input.addEventListener('blur', () => {
+        if (input === elements.vatInput) {
+          handleVatIdValidation();
+        }
+
+        if (hasVisibleErrorMessage()) {
+          updateSubmitButtonState(true);
+        }
       });
     });
 
@@ -276,13 +379,33 @@ function initializeVatValidation(container, formIndex = 0) {
         mutation.addedNodes.forEach((node) => {
           if (node instanceof HTMLElement && node.matches(inputSelector)) {
             node.addEventListener('input', () => {
-              const currentVatValidation = validateVatId(elements.vatInput.value);
-              updateSubmitButtonState(currentVatValidation.isValid);
+              if (node === elements.vatInput) {
+                handleVatIdValidation();
+              } else if (hasVisibleErrorMessage()) {
+                updateSubmitButtonState(true);
+              } else {
+                updateSubmitButtonState();
+              }
             });
 
             node.addEventListener('change', () => {
-              const currentVatValidation = validateVatId(elements.vatInput.value);
-              updateSubmitButtonState(currentVatValidation.isValid);
+              if (node === elements.vatInput || node === elements.vatSelect) {
+                handleVatIdValidation();
+              } else if (hasVisibleErrorMessage()) {
+                updateSubmitButtonState(true);
+              } else {
+                updateSubmitButtonState();
+              }
+            });
+
+            node.addEventListener('blur', () => {
+              if (node === elements.vatInput) {
+                handleVatIdValidation();
+              }
+
+              if (hasVisibleErrorMessage()) {
+                updateSubmitButtonState(true);
+              }
             });
           }
         });
@@ -295,12 +418,62 @@ function initializeVatValidation(container, formIndex = 0) {
     });
   }
 
+  if (elements.submitButton) {
+    const originalClickHandler = elements.submitButton.onclick;
+
+    elements.submitButton.onclick = function (event) {
+      if (hasVisibleErrorMessage()) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        elements.submitButton.disabled = true;
+        elements.submitButton.style.cursor = styles.error.cursor;
+        elements.submitButton.style.opacity = styles.error.opacity;
+
+        return false;
+      }
+
+      if (originalClickHandler) {
+        return originalClickHandler.call(this, event);
+      }
+    };
+  }
+
   elements.vatInput.addEventListener('input', handleVatIdValidation);
   elements.vatSelect?.addEventListener('change', handleVatIdValidation);
+
+  elements.vatInput.addEventListener(
+    'blur',
+    () => {
+      handleVatIdValidation();
+
+      if (hasVisibleErrorMessage()) {
+        updateSubmitButtonState(true);
+      }
+    },
+    true
+  );
+
+  elements.vatInput.addEventListener(
+    'focusout',
+    () => {
+      handleVatIdValidation();
+
+      if (hasVisibleErrorMessage()) {
+        updateSubmitButtonState(true);
+      }
+    },
+    true
+  );
 
   observeElement(elements.vatInput, 'value', () => {
     handleVatIdValidation();
   });
 
   handleVatIdValidation();
+
+  if (hasVisibleErrorMessage()) {
+    hasErrorMessage = true;
+    updateSubmitButtonState(true);
+  }
 }
