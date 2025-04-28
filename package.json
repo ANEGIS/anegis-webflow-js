@@ -52,6 +52,7 @@
     "typescript-eslint": "^8.18.0"
   },
   "dependencies": {
+    "@ANEGIS/anegis-webflow-js": "link:",
     "@finsweet/ts-utils": "^0.40.0",
     "anegis-jsvat": "2.5.4-ANEGIS-0.1"
   },

@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@ANEGIS/anegis-webflow-js':
+        specifier: 'link:'
+        version: 'link:'
       '@finsweet/ts-utils':
         specifier: ^0.40.0
         version: 0.40.0
