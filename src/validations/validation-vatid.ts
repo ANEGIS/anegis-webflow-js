@@ -477,3 +477,5 @@ function initializeVatValidation(container, formIndex = 0) {
     updateSubmitButtonState(true);
   }
 }
+
+console.log('Validation initialized');
