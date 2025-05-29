@@ -1,10 +1,7 @@
 import { EMAIL_LIST } from 'src/global/email-blocked-domains';
-import {
-  EMAIL_FEEDBACK_ELEMENT,
-  EMAIL_INPUT_ELEMENT,
-  FORM_SUBMIT_BUTTON,
-} from 'src/global/variables';
-import { styles } from 'src/global/variables';
+import { EMAIL_FEEDBACK_ELEMENT, EMAIL_INPUT_ELEMENT, styles } from 'src/global/variables';
+
+import { updateFormSubmitState } from '../utils/submit-button';
 
 export function EmailValidation(): void {
   if (document.readyState === 'loading') {
@@ -24,13 +21,21 @@ export function EmailValidation(): void {
       invalidFormat: isPolish ? 'Nieprawidłowy format adresu e-mail!' : 'Invalid e-mail format!',
     };
 
-    const emailInput = findElement<HTMLInputElement>(EMAIL_INPUT_ELEMENT);
-    const emailMessage = findElement<HTMLElement>(EMAIL_FEEDBACK_ELEMENT);
-    const submitButton = findElement<HTMLElement>(FORM_SUBMIT_BUTTON);
-    const form = emailInput?.closest('form');
+    const emailInputs = document.querySelectorAll<HTMLInputElement>(EMAIL_INPUT_ELEMENT);
+    const emailPairs = new Map<HTMLInputElement, HTMLElement>();
 
-    if (!emailInput || !emailMessage || !submitButton) {
-      console.error('Email validation: Required elements not found');
+    emailInputs.forEach((input) => {
+      const form = input.closest('form');
+      if (!form) return;
+
+      const feedbackElement = form.querySelector<HTMLElement>(EMAIL_FEEDBACK_ELEMENT);
+      if (feedbackElement) {
+        emailPairs.set(input, feedbackElement);
+      }
+    });
+
+    if (emailPairs.size === 0) {
+      console.error('Email validation: No matching email input and feedback elements found');
       return;
     }
 
@@ -52,124 +57,98 @@ export function EmailValidation(): void {
       return !EMAIL_LIST.includes(domain);
     }
 
-    function showError(message: string): void {
-      if (emailMessage) emailMessage.style.display = 'block';
-      if (emailMessage) emailMessage.textContent = message;
-      if (emailMessage) emailMessage.style.color = styles.error.color;
-      if (emailInput) emailInput.style.borderBottomColor = styles.error.color;
-      disableSubmitButton();
+    function showError(input: HTMLInputElement, message: string): void {
+      const feedbackElement = emailPairs.get(input);
+      if (feedbackElement) {
+        feedbackElement.style.display = 'block';
+        feedbackElement.textContent = message;
+        feedbackElement.style.color = styles.error.color;
+      }
+      input.style.borderBottomColor = styles.error.color;
+
+      const form = input.closest('form');
+      if (form) {
+        updateFormSubmitState(form, false);
+      }
     }
 
-    function clearError(): void {
-      if (emailMessage) emailMessage.style.display = 'none';
-      if (emailMessage) emailMessage.textContent = '';
-      if (emailInput) emailInput.style.borderBottomColor = styles.normal.color;
+    function clearError(input: HTMLInputElement): void {
+      const feedbackElement = emailPairs.get(input);
+      if (feedbackElement) {
+        feedbackElement.style.display = 'none';
+        feedbackElement.textContent = '';
+      }
+      input.style.borderBottomColor = styles.normal.color;
     }
 
-    function disableSubmitButton(): void {
-      if (submitButton) submitButton.setAttribute('disabled', 'disabled');
-      if (submitButton) submitButton.style.cursor = styles.error.cursor;
-      if (submitButton) submitButton.style.opacity = styles.error.opacity;
-    }
+    function validateAndUpdateUI(input: HTMLInputElement): void {
+      const form = input.closest('form');
+      if (!form) return;
 
-    function enableSubmitButton(): void {
-      if (submitButton) submitButton.removeAttribute('disabled');
-      if (submitButton) submitButton.style.cursor = styles.normal.cursor;
-      if (submitButton) submitButton.style.opacity = styles.normal.opacity;
-    }
-
-    function areRequiredFieldsValid(): boolean {
-      if (!form) return true;
-
-      const requiredFields = form.querySelectorAll('[required]');
-
-      return Array.from(requiredFields).every((field) => {
-        if (field instanceof HTMLInputElement) {
-          if (field.type === 'checkbox' || field.type === 'radio') {
-            return field.checked;
-          }
-          return field.value.trim() !== '';
-        }
-
-        if (field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement) {
-          return field.value.trim() !== '';
-        }
-
-        return true;
-      });
-    }
-
-    function validateAndUpdateUI(): void {
-      const email = emailInput?.value.trim();
+      const email = input.value.trim();
 
       if (!email) {
-        clearError();
-        disableSubmitButton();
+        clearError(input);
+        updateFormSubmitState(form, false);
         return;
       }
 
       if (!isValidEmailFormat(email)) {
         if (email.includes('@')) {
-          showError(messages.invalidFormat);
+          showError(input, messages.invalidFormat);
         } else {
-          clearError();
+          clearError(input);
         }
-        disableSubmitButton();
+        updateFormSubmitState(form, false);
         return;
       }
 
       if (!isAllowedDomain(email)) {
-        showError(messages.businessEmail);
-        disableSubmitButton();
+        showError(input, messages.businessEmail);
+        updateFormSubmitState(form, false);
         return;
       }
 
-      clearError();
-
-      if (areRequiredFieldsValid()) {
-        enableSubmitButton();
-      } else {
-        disableSubmitButton();
-      }
+      clearError(input);
+      updateFormSubmitState(form, true);
     }
 
-    ['input', 'keyup', 'change', 'blur'].forEach((eventType) => {
-      emailInput.addEventListener(eventType, validateAndUpdateUI);
-    });
+    emailPairs.forEach((_, input) => {
+      ['input', 'keyup', 'change', 'blur'].forEach((eventType) => {
+        input.addEventListener(eventType, () => validateAndUpdateUI(input));
+      });
 
-    if (form) {
-      form.querySelectorAll('input, select, textarea').forEach((element) => {
-        ['input', 'change', 'blur'].forEach((eventType) => {
-          element.addEventListener(eventType, validateAndUpdateUI);
+      const form = input.closest('form');
+      if (form) {
+        form
+          .querySelectorAll<
+            HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+          >('input, select, textarea')
+          .forEach((element) => {
+            ['input', 'change', 'blur'].forEach((eventType) => {
+              element.addEventListener(eventType, () => validateAndUpdateUI(input));
+            });
+          });
+
+        form.addEventListener('submit', (event: Event) => {
+          const email = input.value.trim();
+
+          if (!isValidEmailFormat(email) || !isAllowedDomain(email)) {
+            event.preventDefault();
+            validateAndUpdateUI(input);
+            return false;
+          }
+
+          if (!email && input.hasAttribute('required')) {
+            event.preventDefault();
+            return false;
+          }
+
+          return true;
         });
-      });
+      }
 
-      form.addEventListener('submit', (event) => {
-        const email = emailInput.value.trim();
-
-        if (!isValidEmailFormat(email) || !isAllowedDomain(email)) {
-          event.preventDefault();
-          validateAndUpdateUI();
-          return false;
-        }
-
-        if (!areRequiredFieldsValid()) {
-          event.preventDefault();
-          return false;
-        }
-
-        return true;
-      });
-    }
-
-    validateAndUpdateUI();
-  }
-
-  function findElement<T extends HTMLElement>(...selectors: string[]): T | null {
-    for (const selector of selectors) {
-      const element = document.querySelector(selector) as T;
-      if (element) return element;
-    }
-    return null;
+      validateAndUpdateUI(input);
+    });
   }
 }
