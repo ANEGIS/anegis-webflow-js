@@ -28,9 +28,11 @@ export function EmailValidation(): void {
       const form = input.closest('form');
       if (!form) return;
 
-      const feedbackElement = form.querySelector<HTMLElement>(EMAIL_FEEDBACK_ELEMENT);
+      const feedbackElement = form.querySelectorAll<HTMLElement>(EMAIL_FEEDBACK_ELEMENT);
       if (feedbackElement) {
-        emailPairs.set(input, feedbackElement);
+        feedbackElement.forEach((feedback) => {
+          emailPairs.set(input, feedback);
+        });
       }
     });
 
