@@ -1,5 +1,5 @@
 import { EMAIL_LIST } from 'src/global/email-blocked-domains';
-import { EMAIL_FEEDBACK_ELEMENT, EMAIL_INPUT_ELEMENT, styles } from 'src/global/variables';
+import { EMAIL_FEEDBACK_ELEMENT, EMAIL_INPUT_ELEMENT } from 'src/global/variables';
 
 import { updateFormSubmitState } from '../utils/submit-button';
 
@@ -58,7 +58,6 @@ export function WACEmailValidation(): void {
       if (feedbackElement) {
         feedbackElement.style.display = 'flex';
         feedbackElement.textContent = message;
-        feedbackElement.style.color = styles.error.color;
       }
 
       const form = input.closest('form');

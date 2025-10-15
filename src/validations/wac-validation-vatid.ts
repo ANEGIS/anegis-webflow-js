@@ -104,7 +104,7 @@ function initializeVatValidation(container: Document | HTMLElement, formIndex = 
   function showValidationError(message: string): void {
     isVatValid = false;
 
-    elements.vatMessage.style.display = 'block';
+    elements.vatMessage.style.display = 'flex';
     elements.vatMessage.innerText = message;
 
     if (form) {
