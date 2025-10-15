@@ -18,7 +18,7 @@ const SUPPORTED_COUNTRIES = [
   })),
 ];
 
-export default function VatValidation(): void {
+export default function WACVatValidation(): void {
   const vatForms = document.querySelectorAll<HTMLFormElement>(`form:has(${VATID_INPUT_ELEMENT})`);
 
   if (vatForms.length === 0) {

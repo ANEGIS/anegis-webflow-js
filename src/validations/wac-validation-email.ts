@@ -3,7 +3,7 @@ import { EMAIL_FEEDBACK_ELEMENT, EMAIL_INPUT_ELEMENT, styles } from 'src/global/
 
 import { updateFormSubmitState } from '../utils/submit-button';
 
-export function EmailValidation(): void {
+export function WACEmailValidation(): void {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialize);
   } else {
