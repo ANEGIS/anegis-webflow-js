@@ -13,7 +13,6 @@ export function WACPhoneValidation(): void {
     const messages = {
       required: 'Numer telefonu jest wymagany',
       invalidFormat: 'Numer telefonu musi zawierać 9 cyfr',
-      missingPrefix: 'Numer telefonu musi zaczynać się od +48 lub 0048',
     };
 
     const phoneInputs = document.querySelectorAll<HTMLInputElement>(PHONE_INPUT_ELEMENT);
@@ -34,49 +33,16 @@ export function WACPhoneValidation(): void {
     function isValidPhoneFormat(phone: string): boolean {
       if (!phone) return false;
 
-      // Remove all non-digit characters except leading +
       const digits = phone.replace(/\D/g, '');
 
-      // Should be exactly 9 digits (without country code)
       return digits.length === 9 && /^\d+$/.test(digits);
     }
 
-    function hasValidPrefix(phone: string): boolean {
-      if (!phone) return false;
-
-      return phone.startsWith('+48') || phone.startsWith('0048');
-    }
-
-    function normalizePhoneNumber(phone: string): string {
+    function extractNineDigits(phone: string): string {
       if (!phone) return '';
 
-      const trimmed = phone.trim();
-
-      // If already has +48 prefix
-      if (trimmed.startsWith('+48')) {
-        const digits = trimmed.replace(/\D/g, '');
-        return '+48' + digits.slice(-9);
-      }
-
-      // If has 0048 prefix
-      if (trimmed.startsWith('0048')) {
-        const digits = trimmed.replace(/\D/g, '');
-        return '+48' + digits.slice(-9);
-      }
-
-      // If starts with 0 (Polish local format)
-      if (trimmed.startsWith('0')) {
-        const digits = trimmed.replace(/\D/g, '');
-        return '+48' + digits.slice(-9);
-      }
-
-      // If just digits without any prefix
-      const digits = trimmed.replace(/\D/g, '');
-      if (digits.length === 9) {
-        return '+48' + digits;
-      }
-
-      return '';
+      const digits = phone.replace(/\D/g, '');
+      return digits.slice(-9);
     }
 
     function showError(input: HTMLInputElement, message: string): void {
@@ -112,13 +78,6 @@ export function WACPhoneValidation(): void {
         return;
       }
 
-      // Check if has valid prefix
-      if (!hasValidPrefix(phone)) {
-        showError(input, messages.missingPrefix);
-        updateFormSubmitState(form, false);
-        return;
-      }
-
       // Check if has valid format (9 digits)
       if (!isValidPhoneFormat(phone)) {
         showError(input, messages.invalidFormat);
@@ -126,16 +85,8 @@ export function WACPhoneValidation(): void {
         return;
       }
 
-      // Normalize and set the formatted value
-      const normalized = normalizePhoneNumber(phone);
-      if (normalized) {
-        input.value = normalized;
-        clearError(input);
-        updateFormSubmitState(form, true);
-      } else {
-        showError(input, messages.invalidFormat);
-        updateFormSubmitState(form, false);
-      }
+      clearError(input);
+      updateFormSubmitState(form, true);
     }
 
     phonePairs.forEach((_, input) => {
@@ -164,16 +115,16 @@ export function WACPhoneValidation(): void {
             return false;
           }
 
-          if (phone && (!hasValidPrefix(phone) || !isValidPhoneFormat(phone))) {
+          if (phone && !isValidPhoneFormat(phone)) {
             event.preventDefault();
             validateAndUpdateUI(input);
             return false;
           }
 
-          // Normalize before submit
+          // Extract 9 digits and add +48 prefix on submit
           if (phone) {
-            const normalized = normalizePhoneNumber(phone);
-            input.value = normalized;
+            const nineDigits = extractNineDigits(phone);
+            input.value = '+48' + nineDigits;
           }
 
           return true;
