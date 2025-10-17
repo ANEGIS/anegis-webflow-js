@@ -2,6 +2,7 @@ import { PHONE_FEEDBACK_ELEMENT, PHONE_INPUT_ELEMENT } from '../global/variables
 import { updateFormSubmitState } from '../utils/submit-button';
 
 export function WACPhoneValidation(): void {
+  console.log('WACPhoneValidation – Works!');
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialize);
   } else {
