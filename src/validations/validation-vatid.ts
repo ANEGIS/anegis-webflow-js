@@ -72,6 +72,17 @@ function initializeVatValidation(container: Document | HTMLElement, formIndex = 
 
   const form = elements.vatInput.closest('form');
 
+  // Create hidden validation field to prevent bot submissions
+  const hiddenValidation = document.createElement('input');
+  hiddenValidation.type = 'hidden';
+  hiddenValidation.name = `vat_validated_${formIndex}`;
+  hiddenValidation.required = true;
+  hiddenValidation.value = ''; // Start empty - only valid submissions get '1'
+  hiddenValidation.setAttribute('data-vat-validation', formIndex.toString());
+  if (form) {
+    form.appendChild(hiddenValidation);
+  }
+
   function getBrowserCountry(): string {
     const browserLang = navigator.language;
     const countryCode = browserLang.split('-')[1]?.toUpperCase() || browserLang.toUpperCase();
@@ -183,6 +194,9 @@ function initializeVatValidation(container: Document | HTMLElement, formIndex = 
       elements.vatSelect.style.borderBottomColor = styles.error.color;
     }
 
+    // Clear hidden field value to block submission
+    hiddenValidation.value = '';
+
     if (form) {
       updateFormSubmitState(form, false);
     }
@@ -196,6 +210,9 @@ function initializeVatValidation(container: Document | HTMLElement, formIndex = 
     elements.vatInput.style.borderBottomColor = styles.normal.color;
     elements.vatSelect.style.borderBottomColor = styles.normal.color;
 
+    // Set hidden field value to allow submission
+    hiddenValidation.value = '1';
+
     if (form) {
       updateFormSubmitState(form, true);
     }
@@ -204,8 +221,9 @@ function initializeVatValidation(container: Document | HTMLElement, formIndex = 
   function handleVatIdValidation(): void {
     const { value } = elements.vatInput;
 
-    if (!value && !elements.vatInput.hasAttribute('required')) {
-      resetValidationState();
+    // Empty VAT should block submission (bots using submit())
+    if (!value) {
+      showValidationError(isPolishSite ? 'Nieprawidłowy numer NIP' : 'Invalid VAT number format');
       return;
     }
 
@@ -227,6 +245,8 @@ function initializeVatValidation(container: Document | HTMLElement, formIndex = 
   }
 
   if (form) {
+    let isSubmitting = false;
+
     form.addEventListener(
       'submit',
       (event: Event) => {
@@ -240,6 +260,27 @@ function initializeVatValidation(container: Document | HTMLElement, formIndex = 
       },
       true
     );
+
+    if (!form.hasAttribute('data-vat-submit-patched')) {
+      const nativeSubmit = form.submit.bind(form);
+
+      form.submit = function submitWithVatValidation(this: HTMLFormElement): void {
+        if (isSubmitting) return;
+        isSubmitting = true;
+
+        handleVatIdValidation();
+
+        if (!isVatValid) {
+          isSubmitting = false;
+          return;
+        }
+
+        nativeSubmit();
+        isSubmitting = false;
+      };
+
+      form.setAttribute('data-vat-submit-patched', 'true');
+    }
   }
 
   elements.vatInput.addEventListener('input', handleInput);
@@ -247,5 +288,5 @@ function initializeVatValidation(container: Document | HTMLElement, formIndex = 
   elements.vatInput.addEventListener('blur', handleBlur, true);
   elements.vatInput.addEventListener('focusout', handleBlur, true);
 
-  handleVatIdValidation();
+
 }
