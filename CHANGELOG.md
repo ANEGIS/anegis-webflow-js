@@ -1,5 +1,11 @@
 # @ANEGIS/anegis-webflow-js
 
+## 0.0.1
+
+### Patch Changes
+
+- 7b78153: Disable initial VAT validation on page load involved in removing `handleVatIdValidation()` call from initialization.
+
 ## 1.0.0
 
 ### Major Changes
