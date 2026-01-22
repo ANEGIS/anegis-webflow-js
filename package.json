@@ -58,9 +58,5 @@
   },
   "engines": {
     "pnpm": ">=9"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
-    "access": "public"
   }
 }
