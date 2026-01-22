@@ -1,5 +1,11 @@
 # @ANEGIS/anegis-webflow-js
 
+## 0.0.2
+
+### Patch Changes
+
+- ee33b2d: Fix: Ensure production build does not contain dev-only localhost code. Switch dev server to 127.0.0.1.
+
 ## 0.0.1
 
 ### Patch Changes
