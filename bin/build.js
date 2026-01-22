@@ -12,7 +12,7 @@ const ENTRY_POINTS = ['src/index.ts', 'src/index-wac.ts'];
 // Config dev serving
 const LIVE_RELOAD = !PRODUCTION;
 const SERVE_PORT = 3000;
-const SERVE_ORIGIN = `http://localhost:${SERVE_PORT}`;
+const SERVE_ORIGIN = `http://127.0.0.1:${SERVE_PORT}`;
 
 // Create context
 const context = await esbuild.context({
