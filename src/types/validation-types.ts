@@ -7,7 +7,7 @@ export type ValidationResult = {
 export type DOMElementsVatValidation = {
   vatInput: HTMLInputElement;
   vatMessage: HTMLElement;
-  vatSelect: HTMLSelectElement;
+  vatSelect?: HTMLSelectElement;
 };
 
 export type DOMElementsEmailValidation = {

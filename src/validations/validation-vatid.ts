@@ -191,7 +191,9 @@ function initializeVatValidation(container: Document | HTMLElement, formIndex = 
     if (window.location.toString().includes('anegis')) {
       elements.vatMessage.style.color = styles.error.color;
       elements.vatInput.style.borderBottomColor = styles.error.color;
-      elements.vatSelect.style.borderBottomColor = styles.error.color;
+      if (elements.vatSelect) {
+        elements.vatSelect.style.borderBottomColor = styles.error.color;
+      }
     }
 
     // Clear hidden field value to block submission
@@ -208,7 +210,9 @@ function initializeVatValidation(container: Document | HTMLElement, formIndex = 
     elements.vatMessage.style.display = 'none';
     elements.vatMessage.innerText = '';
     elements.vatInput.style.borderBottomColor = styles.normal.color;
-    elements.vatSelect.style.borderBottomColor = styles.normal.color;
+    if (elements.vatSelect) {
+      elements.vatSelect.style.borderBottomColor = styles.normal.color;
+    }
 
     // Set hidden field value to allow submission
     hiddenValidation.value = '1';
