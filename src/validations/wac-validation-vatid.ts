@@ -208,6 +208,4 @@ function initializeVatValidation(container: Document | HTMLElement, formIndex = 
   elements.vatInput.addEventListener('input', handleInput);
   elements.vatInput.addEventListener('blur', handleBlur, true);
   elements.vatInput.addEventListener('focusout', handleBlur, true);
-
-
 }
